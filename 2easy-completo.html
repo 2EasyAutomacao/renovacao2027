@@ -2008,7 +2008,7 @@ td.decide-cell{padding:12px 10px}
     {key:'base', k:['base'], tag:'Mais econômico', line:'Telemedicina em português 24 horas por dia, 7 dias por semana',
      f:{pcp:1,pedi:1,conc:1,esp:1,mental:1,arx:1,tele:1}, cost:''},
     {key:'plus', k:['plus'], tag:'Consultas sem custo extra', line:'Clínico geral, check-up e pediatria sem dedutível e sem copay.',
-     f:{pcp:1,pedi:1,conc:1,chk:1,arx:1,tele:1}, cost:'Alguns procedimentos tem 20% de desconto (Copay)'},
+     f:{pcp:1,pedi:1,conc:1,chk:1,arx:1,tele:1}, cost:''},
     {key:'plus+hosp', k:['plus','hosp'], tag:'Proteção completa', line:'Consultas sem custo extra mais internação, emergência e parto.',
      f:{pcp:1,hosp:1,ihosp:1,gest:1,chk:1,pedi:1,conc:1,tele:1}, cost:'Limites do pacote preventivo (regras do contrato)'},
     {key:'hosp', k:['hosp'], tag:'Foco em hospital', line:'Plano hospitalar com internação ilimitada**: internação e emergência, gestação e parto.',
@@ -2023,7 +2023,7 @@ td.decide-cell{padding:12px 10px}
   /* detalhes completos por plano · Matriz de Coberturas */
   const DET = {
     base:{who:'Para quem quer o menor preço com acesso a especialistas e terapia.',
-      g:[['Consultas e médicos',[['y','Telemedicina','Consultas por vídeo, sem sair de casa em português, 24 horas por dia, 7 dias por semana sem necessidade de agendamento.'],['y','Especialistas','Acesso a médicos especialistas, com copay por consulta mediante agendamento.'],['y','Saúde mental','Atendimento de saúde mental, como terapia.'],['n','Clínico geral presencial','Não incluído neste plano.'],['n','Check-up anual','Não incluído neste plano.'],['n','Pediatria','Não incluída neste plano.']]],
+      g:[['Consultas e médicos',[['y','Telemedicina','Consultas por vídeo, sem sair de casa em português, 24 horas por dia, 7 dias por semana e sem necessidade de agendamento.'],['y','Especialistas','Acesso a médicos especialistas, com copay por consulta mediante agendamento.'],['y','Saúde mental','Atendimento de saúde mental, como terapia.'],['n','Clínico geral presencial','Não incluído neste plano.'],['n','Check-up anual','Não incluído neste plano.'],['n','Pediatria','Não incluída neste plano.']]],
          ['Hospital e emergência',[['n','Internação e emergência','Não incluídas. Se precisar de hospital, a conta é sua.'],['n','Gestação e parto','Não incluídos.']]],
          ['Remédios e exames',[['n','Remédios com receita','Não incluídos.'],['n','Exames de laboratório','Não incluídos.']]],
          ['Como você paga',[['i','Copay','Você paga apenas para especialidade e quando utilizar '],['y','Sem dedutível','Não há valor anual a pagar antes de o plano começar a cobrir.'],['y','Sem limite de idade','Aceita qualquer idade.']]]]},
