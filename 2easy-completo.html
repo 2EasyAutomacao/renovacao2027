@@ -2233,8 +2233,8 @@ td.decide-cell{padding:12px 10px}
   const utms = ()=>{ const q=new URLSearchParams(location.search), o={}; ['utm_source','utm_medium','utm_campaign','utm_term','utm_content','gclid','fbclid'].forEach(k=>{ if(q.get(k)) o[k]=q.get(k); }); return o; };
   async function drako(path, body){
     try{
-      const r = await fetch(DRAKO+path, {method:'POST', headers:{'Content-Type':'application/json','Origin':'https://2easyinsurance.com'},
-        body: JSON.stringify(Object.assign({website:'', source_page:location.href, referrer:document.referrer, language:'pt', form_id:'renovacao-2027'}, utms(), body))});
+	  const r = await fetch(DRAKO+path, {method:'POST', headers:{'Content-Type':'application/json','Origin':'https://2easyinsurance.com'},
+      body: JSON.stringify(Object.assign({website:'', source_page:location.href, referrer:document.referrer, language:'pt', form_id:'renovacao-2027'}, utms(), body))});
       return await r.json();
     }catch(e){ return {ok:false, erro:ERRO_REDE}; }
   }
