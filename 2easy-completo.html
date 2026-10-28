@@ -2007,7 +2007,7 @@ td.decide-cell{padding:12px 10px}
 	  ['conc','Concierge em português']
   ].filter(([k]) => CONC || k !== 'conc');
   const OPTIONS = [
-    {key:'base', k:['base'], tag:'Mais econômico', line:'Plataforma de medicina online em português 24 horas por dia, 7 dias por semana',
+    {key:'base', k:['base'], tag:'Mais econômico', line:'Plataforma de medicina online em português 24 horas por dia, 7 dias por semana <ul class="rx-trust" aria-label="Como funciona"> <li><b>Sem Carência</b></li> <li><b>Clínico Geral ILIMITADO</b></li> <li><b>Encaminhamento médico, renovação de receita e muito mais</b></li> <li><b>Atendimento Emergêncial 24h</b></li> <li><b>Atendimento 100% em português</b></li> </ul>',
      f:{pcp:1,pedi:1,conc:1,esp:1,mental:1,arx:1,tele:1}, cost:''},
     {key:'plus', k:['plus'], tag:'Consultas sem custo extra', line:'Clínico geral, check-up e pediatria sem dedutível e sem copay.',
      f:{pcp:1,pedi:1,conc:1,chk:1,arx:1,tele:1}, cost:''},
@@ -2024,7 +2024,7 @@ td.decide-cell{padding:12px 10px}
   ];
   /* detalhes completos por plano · Matriz de Coberturas */
   const DET = {
-    base:{who:'Para quem quer o menor preço com acesso a especialistas e terapia. <ul class="rx-trust" aria-label="Como funciona"> <li><b>Sem Carência</b></li> <li><b>Clínico Geral ILIMITADO</b></li> <li><b>Encaminhamento médico, renovação de receita e muito mais</b></li> <li><b>Atendimento Emergêncial 24h</b></li> <li><b>Atendimento 100% em português</b></li> </ul>',
+    base:{who:'Para quem quer o menor preço com acesso a especialistas e terapia.',
       g:[['Consultas e médicos',[['y','Telemedicina','Consultas por vídeo, sem sair de casa em português, 24 horas por dia, 7 dias por semana e sem necessidade de agendamento.'],['y','Especialistas','Acesso a médicos especialistas, com copay por consulta mediante agendamento.'],['y','Saúde mental','Atendimento de saúde mental, como terapia.'],['n','Clínico geral presencial','Não incluído neste plano.'],['n','Check-up anual','Não incluído neste plano.'],['n','Pediatria','Não incluída neste plano.']]],
          ['Hospital e emergência',[['n','Internação e emergência','Não incluídas. Se precisar de hospital, a conta é sua.'],['n','Gestação e parto','Não incluídos.'],['y','Especialidades médicas e terapias como:','- Cardiologia - Ginecologia - Nutricionista - Endocrinologia - Psiquiatria - Neurologia - Psicologia - Geriatria - Urologia - Médico da Família - Dermatologista 14+.']]],
          ['Remédios e exames',[['n','Remédios com receita','Não incluídos.'],['n','Exames de laboratório','Não incluídos.']]],
