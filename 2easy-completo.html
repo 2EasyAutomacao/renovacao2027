@@ -1471,7 +1471,7 @@ td.decide-cell{padding:12px 10px}
         <div class="pf-box">
           <div class="pf-box-k">Segurança da sua conta</div>
           <ul class="pf-trust">
-            <li><i>✓</i><span><b>Identidade verificada</b><small>Link pessoal enviado ao seu telefone (···{{ String($json.telefone).slice(-4) }})</small></span></li>
+            <li><i>✓</i><span><b>Identidade verificada</b><small>Telefone com final (···{{ String($json.telefone).slice(-4) }})</small></span></li>
             <li><i>✓</i><span><b>Conexão criptografada</b><small>Seus dados não são compartilhados</small></span></li>
             <li><i>✓</i><span><b>Agência licenciada na Flórida</b></span></li>
           </ul>
@@ -1758,7 +1758,7 @@ td.decide-cell{padding:12px 10px}
     <div class="keep-done">
       <div class="big">✓</div>
       <h3>Escolha registrada, {{$json.primeiro_nome}}.</h3>
-      <p>A Eliza vai ligar para você para renovar o seu {{$json.plano}} para 2027 pelo preço integral. Se mudar de ideia, a sua simulação continua aqui.</p>
+      <p> {{$json.plano}} para 2027 pelo preço integral. Se mudar de ideia, a sua simulação continua aqui.</p>
       <button class="btn-primary" id="keepBack">Ver minha simulação mesmo assim</button>
       <button class="keep-x" id="keepClose">Fechar</button>
     </div>
@@ -1988,7 +1988,7 @@ td.decide-cell{padding:12px 10px}
 	  ['tele','Telemedicina ilimitada'],
 	  ['arx','Prescrição de remédio e emissão de atestados médicos.'],
 	  ['chk','Check-up'],
-	  ['pcp','Clínico geral'],
+	  ['pcp','Clínico geral ilimitado'],
 	  ['esp','Especialistas com agendamento'],
 	  ['hosp','Internação e emergência'],
 	  ['ihosp','Cobertura hospitalar ilimitada'],
