@@ -1323,6 +1323,12 @@ td.decide-cell{padding:12px 10px}
 .mk-lead .full{grid-column:1/-1}
 .mk-err{color:var(--amber);font-size:13.5px;margin:6px 0 10px}
 .mk-ok{font-size:44px;line-height:1;color:var(--mint);font-weight:800}
+.paywhen{display:grid;gap:10px;margin:14px 0}
+.pw{display:flex;gap:12px;align-items:flex-start;border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;cursor:pointer}
+.pw input{margin-top:3px;accent-color:var(--indigo)}
+.pw b{display:block;color:var(--ink);font-size:15px}
+.pw small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
+.pw:has(input:checked){border-color:var(--indigo-2);background:#EEF1FA}
 </style>
 </head>
 <body>
@@ -1851,7 +1857,7 @@ td.decide-cell{padding:12px 10px}
     <div class="progress" id="progress">
       <div class="on"><i></i><span>1 · Seus dados</span></div>
       <div><i></i><span>2 · Preço exato</span></div>
-      <div><i></i><span>3 · Garantia</span></div>
+      <div><i></i><span>3 · Pagamento</span></div>
     </div>
 
     <!-- step 1 -->
@@ -1865,7 +1871,7 @@ td.decide-cell{padding:12px 10px}
           <div class="qk-t">Quem entra no plano e quando cada um nasceu?</div>
           <small class="qk-h">O preço de alguns planos muda com a idade. Já trouxemos os dados do seu cadastro.</small>
           <div class="fields">
-            <div class="field"><label>Nome completo <span class="from">✓ do cadastro</span></label><input value="{{$json.nome_completo}}"></div>
+            <div class="field"><label>Nome completo <span class="from">✓ do cadastro</span></label><input id="ckName" value="{{$json.nome_completo}}"></div>
             <div class="field"><label>Data de nascimento <span class="from">✓ do cadastro</span></label><input id="dobMain" value="{{ $json.pessoas.find(p => p.relacao === 'Titular')?.nascimento }}" type="date"></div>
           </div>
           <div class="deps-title">Dependentes</div>
@@ -1881,7 +1887,7 @@ td.decide-cell{padding:12px 10px}
           <small class="qk-h">A rede de clínicas e o preço final dependem do seu ZIP code.</small>
           <div class="fields">
             <div class="field"><label>ZIP code <span class="from">✓ do cadastro</span></label><input id="zip" value="{{$json.zip}}" inputmode="numeric"></div>
-            <div class="field"><label>Início da cobertura</label><select><option>1º de janeiro de 2027</option><option>1º de dezembro de 2026</option></select></div>
+            <div class="field"><label>Início da cobertura</label><select id="ckStart"><option value="2027-01-01">1º de janeiro de 2027</option><option value="2026-12-01">1º de dezembro de 2026</option></select></div>
           </div>
         </div>
       </div>
@@ -1904,8 +1910,8 @@ td.decide-cell{padding:12px 10px}
         <div class="qk-b">
           <div class="qk-t">Para onde enviamos a confirmação</div>
           <div class="fields" style="margin-top:10px">
-            <div class="field"><label>Telefone</label><input value="{{$json.telefone}}"></div>
-            <div class="field"><label>E-mail</label><input value="{{$json.email}}" type="email"></div>
+            <div class="field"><label>Telefone</label><input id="ckPhone" value="{{$json.telefone}}"></div>
+            <div class="field"><label>E-mail</label><input id="ckEmail" value="{{$json.email}}" type="email"></div>
           </div>
         </div>
       </div>
@@ -1935,26 +1941,31 @@ td.decide-cell{padding:12px 10px}
         </div>
         <div class="reserve"><span>★</span><span><span class="so-concierge">Sua proposta e o <b>Concierge de US$ 100/mês por US$ 0</b> estão reservados por</span><span class="sem-concierge">Sua proposta está reservada por</span></span><span class="timer" id="timer">08:00</span></div>
         <label class="check"><input type="checkbox" id="ack1">Entendo que os planos da 2Easy não são planos do Marketplace/ACA e não cobrem doenças pré-existentes.</label>
-        <label class="check"><input type="checkbox" id="ack2">Li e aceito os termos do plano e a cobrança mensal recorrente a partir de janeiro de 2027.</label>
+        <label class="check"><input type="checkbox" id="ack2">Li e aceito os termos do plano e a cobrança mensal recorrente.</label>
         <div class="step-nav"><button class="back" data-back="1">← Voltar</button><button class="btn-primary" id="toPay" disabled>Continuar →</button></div>
         <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
       </div>
     </div>
 
-    <!-- step 3 -->
+    <!-- step 3 · pagamento: Stripe (Easy Doctors Base) ou especialista (demais planos) -->
     <div class="step" id="st3">
-      <h3>Garanta o seu preço</h3>
-      <p class="s-lede">Você não paga nada hoje. Cadastre o cartão para a primeira mensalidade, que só é cobrada em 1º de janeiro de 2027, quando a sua cobertura começa.</p>
-      <div class="paytoday"><span>Você paga hoje</span><b>US$ 0,00</b></div>
-      <div class="paybox"><span>Mensalidade a partir de 1º jan. 2027</span><b id="payAmt">US$ 209,70</b></div>
-      <div class="fields">
-        <div class="field full"><label>Nome no cartão</label><input value="{{$json.nome_completo}}"></div>
-        <div class="field full"><label>Número do cartão</label><input placeholder="0000 0000 0000 0000" inputmode="numeric"></div>
-        <div class="field"><label>Validade</label><input placeholder="MM/AA"></div>
-        <div class="field"><label>CVV</label><input placeholder="123" inputmode="numeric"></div>
+      <h3>Pagamento seguro</h3>
+      <div id="payStripe">
+        <p class="s-lede">O pagamento é feito no ambiente seguro do Stripe. Escolha quando quer começar a pagar.</p>
+        <div class="paybox"><span>Mensalidade</span><b id="payAmt">US$ 209,70</b></div>
+        <div class="paywhen">
+          <label class="pw"><input type="radio" name="payWhen" value="inicio" checked><span><b>Pagar quando a cobertura começar</b><small id="pwInicio">Você não paga nada hoje. A 1ª mensalidade é cobrada em 1º de janeiro de 2027.</small></span></label>
+          <label class="pw"><input type="radio" name="payWhen" value="hoje"><span><b>Pagar a 1ª mensalidade hoje</b><small>A cobrança é feita agora, e as próximas seguem todo mês.</small></span></label>
+        </div>
+        <p class="mk-err" id="payErr" hidden></p>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finish">Ir para o pagamento seguro →</button></div>
+        <p class="secure">🔒 Os dados do cartão são digitados no Stripe e não passam pela 2Easy.</p>
       </div>
-      <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finish">Garantir minha cobertura →</button></div>
-      <p class="secure">🔒 Dados protegidos. Nada é cobrado hoje, e você pode cancelar a qualquer momento antes de janeiro.</p>
+      <div id="paySpec" hidden>
+        <p class="s-lede">Este plano é contratado com a seguradora. Um especialista da 2Easy finaliza a contratação com você, em português, e confirma a forma de pagamento.</p>
+        <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt2">US$ 209,70</b></div>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finishSpec">Falar com um especialista →</button></div>
+      </div>
       <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
     </div>
 
@@ -1965,8 +1976,8 @@ td.decide-cell{padding:12px 10px}
         <h3>Pronto, {{$json.primeiro_nome}}. Seu preço de 2027 está garantido.</h3>
         <p class="s-lede" style="margin-bottom:0">Enviamos a confirmação para <b>{{$json.email}}</b>.</p>
         <ul>
-          <li>✓ <span><b id="doneName">Easy Doctors Plus</b> começa em 1º de janeiro de 2027</span></li>
-          <li>$ <span><b>Nada foi cobrado hoje</b> · a 1ª mensalidade é em 1º de janeiro de 2027</span></li>
+          <li>✓ <span><b id="doneName">Easy Doctors Plus</b> começa em <span id="doneStart">1º de janeiro de 2027</span></span></li>
+          <li>$ <span id="doneCharge"><b>Nada foi cobrado hoje</b> · a 1ª mensalidade é em 1º de janeiro de 2027</span></li>
           <li class="so-concierge">★ <span><b>Concierge (US$ 100/mês) por US$ 0</b> ativado por 12 meses</span></li>
           <li>☎ <span>Eliza vai ligar para dar as boas-vindas<span class="so-concierge"> e explicar como usar o Concierge</span></span></li>
         </ul>
@@ -2385,8 +2396,51 @@ td.decide-cell{padding:12px 10px}
   function openCk(){ $('ckFore').textContent='US$ '+fmt(current.price)+'/mês'; }
   const acks=[$('ack1'),$('ack2')];
   acks.forEach(a=>a.onchange=()=>$('toPay').disabled=!acks.every(x=>x.checked));
-  $('toPay').onclick=()=>goStep(3);
-  $('finish').onclick=()=>{goStep(4);clearInterval(cdId);window.__purchased&&window.__purchased();$('cd').classList.remove('show');};
+  /* ===== Pagamento · Stripe via n8n (só Easy Doctors Base por enquanto) ===== */
+  const PAGAMENTO_URL = '/webhook/renovacao-pagamento';
+  const STRIPE_PLANS = ['base'];
+  const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
+  const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
+  $('toPay').onclick=()=>{
+    const viaStripe = current.opt.k.length===1 && STRIPE_PLANS.includes(current.opt.k[0]);
+    $('payStripe').hidden = !viaStripe; $('paySpec').hidden = viaStripe;
+    $('payAmt').textContent = $('payAmt2').textContent = 'US$ '+fmt(current.exact);
+    $('pwInicio').textContent = 'Você não paga nada hoje. A 1ª mensalidade é cobrada em '+DATAS[$('ckStart').value]+'.';
+    $('payErr').hidden = true;
+    goStep(3);
+  };
+  $('finishSpec').onclick=()=>window.openSpec(current.opt.name);
+  $('finish').onclick=async()=>{
+    const b=$('finish'); b.disabled=true; b.textContent='Abrindo o pagamento…'; $('payErr').hidden=true;
+    const pagar=document.querySelector('input[name=payWhen]:checked').value;
+    const q=new URLSearchParams(location.search);
+    const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
+    let d=null;
+    try{
+      const r=await fetch(PAGAMENTO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        policy:q.get('policy'), key:q.get('key'), plano:current.opt.key, pessoas:1+$('deps').querySelectorAll('.dep').length,
+        nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:$('ckPhone').value.trim(), zip:$('zip').value.trim(),
+        inicio:$('ckStart').value, pagar, success_url:volta('ok'), cancel_url:volta('cancelado')})});
+      d=await r.json();
+    }catch(e){}
+    if(d && d.success && d.data && d.data.checkout_url){ location.href=d.data.checkout_url; return; }
+    $('payErr').textContent=(d && d.erro) || ERRO_PAG; $('payErr').hidden=false;
+    b.disabled=false; b.textContent='Ir para o pagamento seguro →';
+  };
+  /* volta do Stripe: ?pagamento=ok abre a confirmação */
+  setTimeout(()=>{
+    const q=new URLSearchParams(location.search), st=q.get('pagamento');
+    if(!st) return;
+    const plano=q.get('plano'), quando=q.get('quando'), inicio=DATAS[q.get('inicio')] || DATAS['2027-01-01'];
+    ['pagamento','plano','quando','inicio'].forEach(k=>q.delete(k));
+    history.replaceState(null,'',location.pathname+'?'+q.toString());
+    if(st!=='ok') return;
+    if(PLANS[plano]) $('doneName').textContent=PLANS[plano].name;
+    $('doneStart').textContent=inicio;
+    $('doneCharge').innerHTML = quando==='hoje' ? '<b>1ª mensalidade paga hoje</b> · as próximas seguem todo mês' : '<b>Nada foi cobrado hoje</b> · a 1ª mensalidade é em '+inicio;
+    goStep(4); $('sheet').classList.add('open'); document.body.classList.add('lock');
+    clearInterval(cdId); window.__purchased && window.__purchased(); $('cd').classList.remove('show');
+  },0);
   /* 8-min proposal countdown — in production, use the expiry timestamp from the server */
   let cdId=null, left=480;
   const mmss=x=>String(Math.floor(x/60)).padStart(2,'0')+':'+String(x%60).padStart(2,'0');
