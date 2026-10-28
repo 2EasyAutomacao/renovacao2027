@@ -2332,8 +2332,12 @@ td.decide-cell{padding:12px 10px}
   }
   let timerId;
   function openCheckout(){
+    const zs=($('mkZip').value||'').trim();
+    if(/^\d{5}$/.test(zs)) $('zip').value=zs; /* ZIP que o cliente informou no simulador */
+    const tit=peopleAll().find(p=>p.dataset.rel==='Titular');
+    const ehTitular=p=>!!tit && p.dataset.dob===tit.dataset.dob && p.dataset.name.split(' ')[0]===tit.dataset.name.split(' ')[0];
     $('deps').innerHTML='';
-    peopleAll().filter(p=>p.checked && p.dataset.rel!=='Titular').forEach(p=>$('deps').appendChild(depRow({n:p.dataset.name,r:p.dataset.rel,d:p.dataset.dob})));
+    peopleAll().filter(p=>p.checked && p.dataset.rel!=='Titular' && !ehTitular(p)).forEach(p=>$('deps').appendChild(depRow({n:p.dataset.name,r:p.dataset.rel,d:p.dataset.dob})));
     openCk && openCk(); goStep(1); $('sheet').classList.add('open'); document.body.classList.add('lock');
   }
   $('openCheckout').addEventListener('click',openCheckout);
