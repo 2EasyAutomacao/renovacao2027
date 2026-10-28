@@ -2314,7 +2314,6 @@ td.decide-cell{padding:12px 10px}
   $('mkX').onclick=closeLead; $('mkBack').onclick=closeLead;
   $('mkLead').addEventListener('click',e=>{ if(e.target===$('mkLead')) closeLead(); });
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && $('mkLead').classList.contains('open')){ e.stopImmediatePropagation(); closeLead(); } },true);
-
   /* checkout */
   function depRow(o){
     const el=document.createElement('div'); el.className='dep';
