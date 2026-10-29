@@ -945,6 +945,8 @@ td.decide-cell{padding:12px 10px}
 .o-price{text-align:right;white-space:nowrap}
 .o-price small{display:block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#A9A2D6}
 .rx-opt.on .o-price small{color:var(--mute)}
+.o-price s{display:block;font-size:13px;font-weight:600;color:#A9A2D6;text-decoration:line-through;margin:2px 0 -2px}
+.o-price .o-promo{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#1a1342;background:var(--gold,#F5C451);border-radius:6px;padding:2px 6px;margin-top:4px}
 .o-price b{font-family:"Bricolage Grotesque";font-size:24px;font-weight:800;letter-spacing:-.03em;color:#fff}
 .rx-opt.on .o-price b{color:var(--b-ink1,#1a1342)}
 .o-price em{font-style:normal;font-size:12px;color:#A9A2D6;margin-left:2px}
@@ -2028,7 +2030,7 @@ td.decide-cell{padding:12px 10px}
      Planos com preço por idade são ajustados pela soma dos fatores de idade da família. */
   const PLANS = {
     /* Plus: preços das artes de nov/2026 (5 pessoas = mesmo valor de 4, como na arte); acima de 5: +US$ 69,90 por pessoa */
-    plus:  {name:'Easy Doctors Plus', ind:69.90, mode:'table', table:{1:69.90,2:132.90,3:187.90,4:236.90,5:236.90}, extra:69.90, maxAge:null},
+    plus:  {name:'Easy Doctors Plus', ind:69.90, mode:'table', table:{1:69.90,2:132.90,3:187.90,4:236.90,5:236.90,6:296.90}, extra:69.90, old:{2:139.80,3:209.70,4:279.60,5:279.60,6:417.60}, maxAge:null},
     base:  {name:'Easy Doctors Base', ind:29.90, fam:49.90, mode:'flatFam', maxAge:null},
     hosp:  {name:'Easy Hospital', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, extra:80, maxAge:64},
     img:   {name:'IMG Plano Emergencial', ind:100, fam3:270, mode:'age', maxAge:null, from:true},
@@ -2126,7 +2128,7 @@ td.decide-cell{padding:12px 10px}
     const P=PLANS[id], n=ages.length;
     if(P.mode==='perPerson') return +(P.ind*n).toFixed(2);
     if(P.mode==='flatFam') return n===1?P.ind:P.fam;
-    if(P.mode==='table') return +(P.table[Math.min(n,5)] + (n>5?(n-5)*P.extra:0)).toFixed(2);
+    if(P.mode==='table'){ const mx=Math.max(...Object.keys(P.table).map(Number)); return +(P.table[Math.min(n,mx)] + (n>mx?(n-mx)*P.extra:0)).toFixed(2); }
     const f=ages.reduce((t,a)=>t+ageF(a),0)*(zipF||1);
     return n===1 ? Math.round(P.ind*ageF(ages[0])*(zipF||1)) : Math.round(P.fam3*f/REF_FAM);
   }
@@ -2140,12 +2142,20 @@ td.decide-cell{padding:12px 10px}
   };
   const estadoCliente = () => estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim()) || estadoDoZip('{{$json.zip}}');
   const planoNoEstado = o => { const uf=estadoCliente(); return o.k.every(id=>!ESTADOS_PLANO[id] || (uf && ESTADOS_PLANO[id].includes(uf))); };
+  /* preço normal (antes da promoção) — panfletos do Marketing; null = sem desconto */
+  function planOld(id,ages){
+    const P=PLANS[id], n=ages.length; if(!P.old) return null;
+    const mx=Math.max(...Object.keys(P.old).map(Number));
+    const v = P.old[Math.min(n,mx)]; if(v==null) return null;
+    return +(v + (n>mx?(n-mx)*P.extra:0)).toFixed(2);
+  }
   function build(ages){
     const oldest=Math.max(...ages);
     return OPTIONS.filter(planoNoEstado).map(o=>{
-      const parts=o.k.map(id=>({id,name:PLANS[id].name,price:planPrice(id,ages)}));
+      const parts=o.k.map(id=>{ const price=planPrice(id,ages), old=planOld(id,ages); return {id,name:PLANS[id].name,price,old:(old&&old>price)?old:null}; });
       const blocked=o.k.some(id=>PLANS[id].maxAge && oldest>PLANS[id].maxAge);
-      return Object.assign({},o,{parts,price:+parts.reduce((t,x)=>t+x.price,0).toFixed(2),name:parts.map(x=>x.name).join(' + '),from:o.k.some(id=>PLANS[id].from),blocked});
+      const oldTot=parts.some(x=>x.old) ? +parts.reduce((t,x)=>t+(x.old||x.price),0).toFixed(2) : null;
+      return Object.assign({},o,{parts,old:oldTot,price:+parts.reduce((t,x)=>t+x.price,0).toFixed(2),name:parts.map(x=>x.name).join(' + '),from:o.k.some(id=>PLANS[id].from),blocked});
     });
   }
   const $ = id => document.getElementById(id);
@@ -2219,7 +2229,7 @@ td.decide-cell{padding:12px 10px}
             <ul class="o-feat">${feats}</ul>
           </div>
           <div class="o-money">
-            <div class="o-price"><small>${r.from?'Previsão · a partir de':'Previsão 2027'}</small><b>US$ ${fmt(r.price)}</b><em>/mês</em></div>
+            <div class="o-price"><small>${r.from?'Previsão · a partir de':'Previsão 2027'}</small>${r.old?`<s>US$ ${fmt(r.old)}/mês</s>`:''}<b>US$ ${fmt(r.price)}</b><em>/mês</em>${r.old?`<span class="o-promo">Promoção</span>`:''}</div>
             <div class="o-vs">
               <div class="o-bar"><span class="o-bl"><span class="lg">Mesmo plano<br>em 2027</span><span class="sm">Atual</span></span><span class="o-tr"><i class="old" style="width:100%"></i></span><span class="o-v">US$ {{ (Number($json.valor_apolice)).toLocaleString('pt-BR',{maximumFractionDigits:0}) }}</span></div>
               <div class="o-bar"><span class="o-bl"><span class="lg">Este plano</span><span class="sm">Novo</span></span><span class="o-tr"><i class="new" style="width:${w.toFixed(1)}%"></i></span><span class="o-v">US$ ${fmt0(r.price)}</span></div>
@@ -2419,7 +2429,7 @@ td.decide-cell{padding:12px 10px}
     const fam0 = ages.length===1?'Individual':'Família · '+ages.length+' pessoas';
     const ehBase = formModo()==='stripe';
     const fam = ehBase ? baseFam() : fam0;
-    const parts = ehBase ? [{name:PLANS.base.name, price:basePreco().valor}] : current.opt.k.map(id=>({name:PLANS[id].name,price:planPrice(id,ages.length?ages:current.ages,zipF)}));
+    const parts = ehBase ? [{name:PLANS.base.name, price:basePreco().valor}] : current.opt.k.map(id=>{ const a=ages.length?ages:current.ages, price=planPrice(id,a,zipF), old=planOld(id,a); return {name:PLANS[id].name, price, old:(old&&old>price)?old:null}; });
     const tot = +parts.reduce((t,x)=>t+x.price,0).toFixed(2);
     current.exact=tot;
     setTimeout(()=>{
@@ -2434,7 +2444,7 @@ td.decide-cell{padding:12px 10px}
       $('vsMsg').textContent = Math.abs(d)<.01 ? '✓ Igual à sua previsão' : (d<0 ? '↓ US$ '+fmt(-d)+' abaixo da previsão' : 'Ajustado em US$ '+fmt(d)+' pelas idades e o ZIP confirmados');
       $('doneName').textContent = current.opt.name;
       $('qLines').innerHTML =
-        parts.map(x=>`<div><span>${x.name} · ${fam}</span><b>US$ ${fmt(x.price)}</b></div>`).join('')+
+        parts.map(x=>`<div><span>${x.name} · ${fam}${x.old?` <s style="opacity:.6">US$ ${fmt(x.old)}</s> <b style="color:var(--mint)">promoção</b>`:''}</span><b>US$ ${fmt(x.price)}</b></div>`).join('')+
         (CONC && current.opt.k.includes('plus')?`<div class="giftline"><span>★ Concierge 2Easy (12 meses) <s>US$ 100,00</s></span><b>US$ 0,00 · prêmio</b></div>`:'')+
         `<div><span>Taxa de adesão</span><b>US$ 0,00</b></div>`+
         `<div class="tot"><span>${formModo()==='stripe'?'Mensalidade a partir de jan. 2027':'Mensalidade prevista a partir de jan. 2027'}</span><span>US$ ${fmt(tot)}</span></div>`+
