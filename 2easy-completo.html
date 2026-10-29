@@ -2039,13 +2039,13 @@ td.decide-cell{padding:12px 10px}
 		 ['Hospital e emergência',[['n','Internação e emergência','Não incluídas. Você pode somar o Easy Hospital.'],['n','Gestação e parto','Não incluídos.'],['y','20% de desconto em procedimentos como:','<ul class="ul-og"><li>botox</li><li>depilação a laser</li><li>programa de emagrecimento</li><li>reposição hormonal</li><li>soroterapia</li><li>exame de ultrassom</li><li>exames de sangue</li></ul>']]], 
 		 ['Remédios e exames',[['n','Remédios com receita','Não incluídos.'],['n','Exames de laboratório','Não incluídos.']]],
          ['Como você paga',[['y','Sem dedutível','O plano cobre desde a primeira consulta.'],['y','6 Consultas anuais','Consultas excedentes com copay de 50 dolares.'],['y','Sem limite de idade','Aceita qualquer idade.']]],
-         ['Extras 2Easy',[['y','Concierge em português','Uma pessoa da nossa equipe marca suas consultas em inglês. US$ 100/mês por US$ 0 para os primeiros clientes.']]]]},
+         ]},
     hosp:{who:'Para quem quer proteção contra contas de hospital, parto e cuidados de prevenção.',
       g:[['Consultas e médicos',[['y','Clínico geral presencial','Consultas presenciais com médico de família, 6 consultas por ano.'],['y','Check-up anual','Um check-up completo por ano.'],['y','Atendimento pediatrico','Atendimento pediátrico com o medico da familia, para crianças a partir de 2 anos de idade'],['y','Telemedicina','Consultas por vídeo ou telefone.'],['n','Especialistas','Não incluídos neste plano.'],['n','Saúde mental','Não incluída neste plano.']]],
          ['Hospital e emergência',[['n','Internação e emergência','Não incluídas. Você pode somar o Easy Hospital.'],['n','Gestação e parto','Não incluídos.'],['y','20% de desconto em procedimentos como:',' - botox - depilação a laser - programa de emagrecimento - reposição hormonal - soroterapia -  exame de ultrassom -  exames de sangue.']]],
          ['Remédios e exames',[['n','Remédios com receita','Não incluídos.'],['n','Exames de laboratório','Não incluídos.']]],
          ['Como você paga',[['y','Sem dedutível','O plano cobre desde a primeira consulta.'],['y','6 Consultas anuais','Consultas excedentes com copay de 50 dolares'],['y','Sem limite de idade','Aceita qualquer idade.']]],
-         ['Extras 2Easy',[['y','Concierge em português','Uma pessoa da nossa equipe marca suas consultas em inglês. US$ 100/mês por US$ 0 para os primeiros clientes.']]]]},
+         ]},
     img:{who:'Para quem quer uma proteção básica para emergências.',
       g:[['Consultas e médicos',[['y','Telemedicina','Consultas por vídeo ou telefone.'],['n','Clínico geral presencial','Não incluído.'],['n','Especialistas','Não incluídos.'],['n','Pediatria','Não incluída.']]],
          ['Hospital e emergência',[['h','Internação e emergência com limite','Cobre até um valor máximo. Acima dele, a conta é sua.'],['n','Gestação e parto','Não incluídos.']]],
@@ -2168,7 +2168,6 @@ td.decide-cell{padding:12px 10px}
             <h3 id="t-${id}">${r.name}</h3>
             <p>${r.line}</p>
             <ul class="o-feat">${feats}</ul>
-            ${conc?`<span class="o-gift"><i aria-hidden="true">★</i>Concierge em português <s>US$ 100/mês</s> <b>US$ 0</b><em>Benefício limitado</em></span>`:''}
           </div>
           <div class="o-money">
             <div class="o-price"><small>${r.from?'Previsão · a partir de':'Previsão 2027'}</small><b>US$ ${fmt(r.price)}</b><em>/mês</em></div>
