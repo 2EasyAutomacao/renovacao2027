@@ -1879,7 +1879,7 @@ td.decide-cell{padding:12px 10px}
           <small class="qk-h">A rede de clínicas e o preço final dependem do seu ZIP code.</small>
           <div class="fields">
             <div class="field"><label>ZIP code <span class="from">✓ do cadastro</span></label><input id="zip" value="{{$json.zip}}" inputmode="numeric"></div>
-            <div class="field"><label>Início da cobertura</label><select id="ckStart"><option value="2027-01-01">1º de janeiro de 2027</option><option value="2026-12-01">1º de dezembro de 2026</option></select></div>
+            <div class="field"><label>Início da cobertura</label><select id="ckStart"><option value="2027-01-01">1º de janeiro de 2027</option></select></div>
           </div>
         </div>
       </div>
@@ -1908,6 +1908,7 @@ td.decide-cell{padding:12px 10px}
         </div>
       </div>
 
+      <p class="mk-err" id="ckErr" hidden></p>
       <div class="step-nav"><button class="btn-primary" id="toQuote" disabled>Ver meu valor exato →</button></div>
       <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
     </div>
@@ -1943,12 +1944,9 @@ td.decide-cell{padding:12px 10px}
     <div class="step" id="st3">
       <h3>Pagamento seguro</h3>
       <div id="payStripe">
-        <p class="s-lede">O pagamento é feito no ambiente seguro do Stripe. Escolha quando quer começar a pagar.</p>
+        <p class="s-lede">Você vai salvar o cartão no ambiente seguro do Stripe. A assinatura começa em janeiro de 2027.</p>
         <div class="paybox"><span>Mensalidade</span><b id="payAmt">US$ 187,90</b></div>
-        <div class="paywhen">
-          <label class="pw"><input type="radio" name="payWhen" value="inicio" checked><span><b>Pagar quando a cobertura começar</b><small id="pwInicio">Você não paga nada hoje. A 1ª mensalidade é cobrada em 1º de janeiro de 2027.</small></span></label>
-          <label class="pw"><input type="radio" name="payWhen" value="hoje"><span><b>Pagar a 1ª mensalidade hoje</b><small>A cobrança é feita agora, e as próximas seguem todo mês.</small></span></label>
-        </div>
+        <p class="s-lede" id="pwInicio">Você não paga nada hoje. A 1ª mensalidade é cobrada em 1º de janeiro de 2027.</p>
         <p class="mk-err" id="payErr" hidden></p>
         <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finish">Ir para o pagamento seguro →</button></div>
         <p class="secure">🔒 Os dados do cartão são digitados no Stripe e não passam pela 2Easy.</p>
@@ -2358,6 +2356,12 @@ td.decide-cell{padding:12px 10px}
     $('hqWarn').classList.toggle('show', r.value==='sim' && r.checked);
   });
   $('toQuote').onclick=()=>{
+    /* Easy Doctors Base (pagamento pelo Stripe): documento e limite de pessoas são conferidos aqui, no passo 1 */
+    const soBase = current.opt && current.opt.k.length===1 && current.opt.k[0]==='base';
+    const nPessoas = 1+$('deps').querySelectorAll('.dep').length;
+    const erro1 = !soBase ? null : (!$('ckDoc').value.trim() ? 'Informe o número do documento do titular para continuar.' : (nPessoas>4 ? 'O Easy Doctors Base atende até 4 pessoas. Fale com um especialista para incluir toda a família.' : null));
+    $('ckErr').hidden = !erro1; $('ckErr').textContent = erro1 || '';
+    if(erro1){ $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); if(!$('ckDoc').value.trim()) $('ckDoc').focus(); return; }
     goStep(2); $('qLoading').style.display='block'; $('qReady').style.display='none';
     const dobs=[$('dobMain').value,...[...$('deps').querySelectorAll('input[type=date]')].map(i=>i.value)];
     const ages=dobs.map(ageOn).filter(a=>a!==null && a>=0);
@@ -2413,7 +2417,7 @@ td.decide-cell{padding:12px 10px}
   $('finishSpec').onclick=()=>window.openSpec(current.opt.name);
   $('finish').onclick=async()=>{
     const b=$('finish'); b.disabled=true; b.textContent='Abrindo o pagamento…'; $('payErr').hidden=true;
-    const pagar=document.querySelector('input[name=payWhen]:checked').value;
+    const pagar='inicio'; /* página da renovação: sempre começa em janeiro (assinatura imediata é pela easydoctors.us) */
     const q=new URLSearchParams(location.search);
     const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
     let d=null;
