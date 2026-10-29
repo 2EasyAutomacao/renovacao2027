@@ -2207,6 +2207,7 @@ td.decide-cell{padding:12px 10px}
 
   function renderPick(){
     const o=current.opt, price=o.price; current.price=price; current.hosp=o.k.includes('hosp');
+    window.__plano = o.name; /* usado na mensagem do WhatsApp */
     const save=OLD-price;
     $('keepSave').textContent = 'US$ '+fmt0(Math.max(save,0)*12)+' no ano';
     $('mbPrice').textContent=fmt(price); $('mbName').textContent=o.name;
@@ -2535,12 +2536,15 @@ td.decide-cell{padding:12px 10px}
   window.__purchased=()=>{purchased=true;clearTimeout(idleId);};
   /* especialista */
   const specEl=$('spec');
-  function openSpec(plan){ $('spec-t').textContent = (typeof plan==='string' && plan) ? 'Tire suas dúvidas sobre o '+plan+'.' : 'Tire sua dúvida agora, antes de decidir.'; specEl.classList.remove('done');specEl.classList.add('open');document.body.classList.add('lock');$('specWa').focus(); }
+  function openSpec(plan){
+    const nome = (typeof plan==='string' && plan) || window.__plano || '';
+    $('specWa').href = 'https://wa.me/18888862210?text=' + encodeURIComponent('Olá! quero renovar o plano' + (nome ? ' ' + nome : ''));
+    $('spec-t').textContent = (typeof plan==='string' && plan) ? 'Tire suas dúvidas sobre o '+plan+'.' : 'Tire sua dúvida agora, antes de decidir.'; specEl.classList.remove('done');specEl.classList.add('open');document.body.classList.add('lock');$('specWa').focus(); }
   const closeSpec=()=>{specEl.classList.remove('open'); if(!$('sheet').classList.contains('open')) document.body.classList.remove('lock');};
   document.querySelectorAll('[data-spec]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();openSpec();}));
   window.openSpec=openSpec;
   $('specX').onclick=closeSpec; $('specBack').onclick=closeSpec;
-  $('specCb').onclick=()=>specEl.classList.add('done');
+  if($('specCb')) $('specCb').onclick=()=>specEl.classList.add('done'); /* o botão foi removido do HTML */
   specEl.addEventListener('click',e=>{if(e.target===specEl)closeSpec();});
   document.addEventListener('keydown',e=>{ if(e.key==='Escape' && specEl.classList.contains('open')){ e.stopImmediatePropagation(); closeSpec(); } },true);
 })();
