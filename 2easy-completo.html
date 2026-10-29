@@ -1853,7 +1853,7 @@ td.decide-cell{padding:12px 10px}
     <!-- step 1 -->
     <div class="step active" id="st1">
       <h3 id="ck-t">3 perguntas para o seu valor exato</h3>
-      <p class="s-lede">Sua previsão foi de <b id="ckFore">US$ 209,70/mês</b>. Confirme abaixo e calculamos o valor exato. Você só paga depois de ver.</p>
+      <p class="s-lede">Sua previsão foi de <b id="ckFore">US$ 187,90/mês</b>. Confirme abaixo e calculamos o valor exato. Você só paga depois de ver.</p>
 
       <div class="qk">
         <div class="qk-n">1</div>
@@ -1919,14 +1919,14 @@ td.decide-cell{padding:12px 10px}
         <h3>Seu valor exato</h3>
         <p class="s-lede">Calculado com as datas de nascimento e o ZIP que você confirmou. Este é o valor que você vai pagar a partir de janeiro.</p>
         <div class="vs">
-          <div><small>Previsão</small><b id="qFore">US$ 209,70</b></div>
+          <div><small>Previsão</small><b id="qFore">US$ 187,90</b></div>
           <div class="arr" aria-hidden="true">→</div>
-          <div class="hi"><small>Valor exato</small><b id="qExact">US$ 209,70</b></div>
+          <div class="hi"><small>Valor exato</small><b id="qExact">US$ 187,90</b></div>
         </div>
         <p class="vs-msg" id="vsMsg">✓ Igual à sua previsão</p>
         <div class="quote">
           <div class="quote-head">
-            <div><small class="lbl" id="qPlan">Easy Doctors Plus · Família</small><div class="amount"><span class="cur">US$</span><span id="qPrice">209,70</span><small>/mês</small></div></div>
+            <div><small class="lbl" id="qPlan">Easy Doctors Plus · Família</small><div class="amount"><span class="cur">US$</span><span id="qPrice">187,90</span><small>/mês</small></div></div>
             <span class="exact">✓ Preço confirmado</span>
           </div>
           <div class="lines" id="qLines"></div>
@@ -1944,7 +1944,7 @@ td.decide-cell{padding:12px 10px}
       <h3>Pagamento seguro</h3>
       <div id="payStripe">
         <p class="s-lede">O pagamento é feito no ambiente seguro do Stripe. Escolha quando quer começar a pagar.</p>
-        <div class="paybox"><span>Mensalidade</span><b id="payAmt">US$ 209,70</b></div>
+        <div class="paybox"><span>Mensalidade</span><b id="payAmt">US$ 187,90</b></div>
         <div class="paywhen">
           <label class="pw"><input type="radio" name="payWhen" value="inicio" checked><span><b>Pagar quando a cobertura começar</b><small id="pwInicio">Você não paga nada hoje. A 1ª mensalidade é cobrada em 1º de janeiro de 2027.</small></span></label>
           <label class="pw"><input type="radio" name="payWhen" value="hoje"><span><b>Pagar a 1ª mensalidade hoje</b><small>A cobrança é feita agora, e as próximas seguem todo mês.</small></span></label>
@@ -1955,7 +1955,7 @@ td.decide-cell{padding:12px 10px}
       </div>
       <div id="paySpec" hidden>
         <p class="s-lede">Este plano é contratado com a seguradora. Um especialista da 2Easy finaliza a contratação com você, em português, e confirma a forma de pagamento.</p>
-        <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt2">US$ 209,70</b></div>
+        <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt2">US$ 187,90</b></div>
         <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finishSpec">Falar com um especialista →</button></div>
       </div>
       <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
@@ -1987,9 +1987,10 @@ td.decide-cell{padding:12px 10px}
      Valores de referência para 30 anos; família = casal de 30 + filho de 10.
      Planos com preço por idade são ajustados pela soma dos fatores de idade da família. */
   const PLANS = {
-    plus:  {name:'Easy Doctors Plus', ind:69.90, mode:'perPerson', maxAge:null},
+    /* Plus: preços das artes de nov/2026 (5 pessoas = mesmo valor de 4, como na arte); acima de 5: +US$ 69,90 por pessoa */
+    plus:  {name:'Easy Doctors Plus', ind:69.90, mode:'table', table:{1:69.90,2:132.90,3:187.90,4:236.90,5:236.90}, extra:69.90, maxAge:null},
     base:  {name:'Easy Doctors Base', ind:29.90, fam:49.90, mode:'flatFam', maxAge:null},
-    hosp:  {name:'Easy Hospital', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, maxAge:64},
+    hosp:  {name:'Easy Hospital', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, extra:80, maxAge:64},
     img:   {name:'IMG Plano Emergencial', ind:100, fam3:270, mode:'age', maxAge:null, from:true},
     presidio:{name:'FortressPlan', ind:216, fam3:674, mode:'age', maxAge:64, from:true},
     st:    {name:'Short Term Plan', ind:280, fam3:740, mode:'age', maxAge:64, from:true}
@@ -2085,7 +2086,7 @@ td.decide-cell{padding:12px 10px}
     const P=PLANS[id], n=ages.length;
     if(P.mode==='perPerson') return +(P.ind*n).toFixed(2);
     if(P.mode==='flatFam') return n===1?P.ind:P.fam;
-    if(P.mode==='table') return P.table[Math.min(n,5)] + (n>5?(n-5)*80:0);
+    if(P.mode==='table') return +(P.table[Math.min(n,5)] + (n>5?(n-5)*P.extra:0)).toFixed(2);
     const f=ages.reduce((t,a)=>t+ageF(a),0)*(zipF||1);
     return n===1 ? Math.round(P.ind*ageF(ages[0])*(zipF||1)) : Math.round(P.fam3*f/REF_FAM);
   }
@@ -2101,7 +2102,7 @@ td.decide-cell{padding:12px 10px}
   const fmt = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
   const fmt0 = n => Math.round(n).toLocaleString('pt-BR');
   const agesTxt = a => a.length===1 ? a[0]+' anos' : a.slice(0,-1).join(', ')+' e '+a[a.length-1]+' anos';
-  let current = {n:{{ $json.pessoas.length }},ages:{{ JSON.stringify($json.pessoas.map(p => p.idade)) }},opt:null,price:209.70,hosp:false};
+  let current = {n:{{ $json.pessoas.length }},ages:{{ JSON.stringify($json.pessoas.map(p => p.idade)) }},opt:null,price:187.90,hosp:false};
   let ranked=[];
 
   function show(id){ ['sCalc','sComp','sRes'].forEach(s=>$(s).classList.toggle('active',s===id)); document.querySelector('.compare').classList.toggle('done',id==='sRes'); }
