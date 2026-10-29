@@ -1862,6 +1862,8 @@ td.decide-cell{padding:12px 10px}
           <div class="fields">
             <div class="field"><label>Nome completo <span class="from">✓ do cadastro</span></label><input id="ckName" value="{{$json.nome_completo}}"></div>
             <div class="field"><label>Data de nascimento <span class="from">✓ do cadastro</span></label><input id="dobMain" value="{{ $json.pessoas.find(p => p.relacao === 'Titular')?.nascimento }}" type="date"></div>
+            <div class="field"><label for="ckDocTipo">Documento do titular</label><select id="ckDocTipo"><option value="1">SSN</option><option value="2">ITIN</option><option value="3">Passaporte</option><option value="0">CPF</option></select></div>
+            <div class="field"><label for="ckDoc">Número do documento</label><input id="ckDoc" inputmode="text" autocomplete="off" placeholder="Usado para criar o seu acesso ao Easy Doctors"></div>
           </div>
           <div class="deps-title">Dependentes</div>
           <div id="deps"></div>
@@ -2205,7 +2207,6 @@ td.decide-cell{padding:12px 10px}
 
   function renderPick(){
     const o=current.opt, price=o.price; current.price=price; current.hosp=o.k.includes('hosp');
-    window.__plano = o.name; /* usado na mensagem do WhatsApp */
     const save=OLD-price;
     $('keepSave').textContent = 'US$ '+fmt0(Math.max(save,0)*12)+' no ano';
     $('mbPrice').textContent=fmt(price); $('mbName').textContent=o.name;
@@ -2386,7 +2387,15 @@ td.decide-cell{padding:12px 10px}
   const acks=[$('ack1'),$('ack2')];
   acks.forEach(a=>a.onchange=()=>$('toPay').disabled=!acks.every(x=>x.checked));
   /* ===== Pagamento · Stripe via n8n (só Easy Doctors Base por enquanto) ===== */
-  const PAGAMENTO_URL = '/webhook/renovacao-pagamento';
+  const PAGAMENTO_URL = '/webhook/EasyDoctorsV2.1';   /* EasyDoctors v2: registra o titular, cria no Stripe e devolve o link */
+  /* Preços do Easy Doctors Base (tabela Plano do Supabase) — plano família vai até 4 pessoas */
+  const PRICE_BASE = {individual:'price_1SCteYGbfw1lxjkC8rdVqyce', familia:'price_1SCmotGbfw1lxjkCggettiPx'};
+  const MAX_PESSOAS_BASE = 4;
+  const ERRO_JA_CLIENTE = 'Você já tem cadastro no Easy Doctors. Fale com um especialista para continuar.';
+  const ERRO_MAX_PESSOAS = 'O Easy Doctors Base atende até 4 pessoas. Fale com um especialista para incluir toda a família.';
+  const ERRO_DOC = 'Informe o número do documento do titular no passo 1.';
+  /* telefone no formato +DDI (o cadastro no Easy Doctors separa +1 / +55) */
+  const telE164 = t => { const d=String(t||'').replace(/\D/g,''); if(!d) return ''; if(String(t).trim().startsWith('+')) return '+'+d; if(d.length===10) return '+1'+d; if(d.length===11 && d[0]==='1') return '+'+d; return '+'+d; };
   const STRIPE_PLANS = ['base'];
   const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
   const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
@@ -2406,14 +2415,23 @@ td.decide-cell{padding:12px 10px}
     const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
     let d=null;
     try{
+      const pessoas=1+$('deps').querySelectorAll('.dep').length;
+      const doc=$('ckDoc').value.trim();
+      const falha = !doc ? ERRO_DOC : (pessoas>MAX_PESSOAS_BASE ? ERRO_MAX_PESSOAS : null);
+      if(falha){ $('payErr').textContent=falha; $('payErr').hidden=false; b.disabled=false; b.textContent='Ir para o pagamento seguro →'; return; }
       const r=await fetch(PAGAMENTO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        policy:q.get('policy'), key:q.get('key'), plano:current.opt.key, pessoas:1+$('deps').querySelectorAll('.dep').length,
-        nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:$('ckPhone').value.trim(), zip:$('zip').value.trim(),
-        inicio:$('ckStart').value, pagar, success_url:volta('ok'), cancel_url:volta('cancelado')})});
+        pedido_id:q.get('policy'), client_reference_id:q.get('policy'),
+        nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value),
+        tipoDocumento:Number($('ckDocTipo').value), numeroDocumento:doc,
+        stripe_price_id: pessoas===1 ? PRICE_BASE.individual : PRICE_BASE.familia,
+        inicio_janeiro: pagar==='inicio', inicio:$('ckStart').value,
+        success_url:volta('ok'), cancel_url:volta('cancelado'), origin_url:location.origin+location.pathname+'?policy='+encodeURIComponent(q.get('policy')||'')+'&key='+encodeURIComponent(q.get('key')||''),
+        vendedor:'', URL_utmfy:location.href,
+        origem:'renovacao_2027', plano:current.opt.key, pessoas, zip:$('zip').value.trim()})});
       d=await r.json();
     }catch(e){}
     if(d && d.success && d.data && d.data.checkout_url){ location.href=d.data.checkout_url; return; }
-    $('payErr').textContent=(d && d.erro) || ERRO_PAG; $('payErr').hidden=false;
+    $('payErr').textContent = (d && d.error==='cliente_ja_cadastrado') ? ERRO_JA_CLIENTE : ((d && (d.erro || d.message)) || ERRO_PAG); $('payErr').hidden=false;
     b.disabled=false; b.textContent='Ir para o pagamento seguro →';
   };
   /* volta do Stripe: ?pagamento=ok abre a confirmação */
@@ -2517,10 +2535,7 @@ td.decide-cell{padding:12px 10px}
   window.__purchased=()=>{purchased=true;clearTimeout(idleId);};
   /* especialista */
   const specEl=$('spec');
- function openSpec(plan){
-const nome = (typeof plan==='string' && plan) || window.__plano || '';
-$('specWa').href = 'https://wa.me/18888862210?text=' + encodeURIComponent('Olá! quero renovar o plano' + (nome ? ' ' + nome : ''));
-$('spec-t').textContent = (typeof plan==='string' && plan) ? 'Tire suas dúvidas sobre o '+plan+'.' : 'Tire sua dúvida agora, antes de decidir.'; specEl.classList.remove('done');specEl.classList.add('open');document.body.classList.add('lock');$('specWa').focus(); }
+  function openSpec(plan){ $('spec-t').textContent = (typeof plan==='string' && plan) ? 'Tire suas dúvidas sobre o '+plan+'.' : 'Tire sua dúvida agora, antes de decidir.'; specEl.classList.remove('done');specEl.classList.add('open');document.body.classList.add('lock');$('specWa').focus(); }
   const closeSpec=()=>{specEl.classList.remove('open'); if(!$('sheet').classList.contains('open')) document.body.classList.remove('lock');};
   document.querySelectorAll('[data-spec]').forEach(b=>b.addEventListener('click',e=>{e.preventDefault();openSpec();}));
   window.openSpec=openSpec;
