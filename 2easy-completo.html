@@ -1862,7 +1862,7 @@ td.decide-cell{padding:12px 10px}
           <div class="fields">
             <div class="field"><label>Nome completo <span class="from">✓ do cadastro</span></label><input id="ckName" value="{{$json.nome_completo}}"></div>
             <div class="field"><label>Data de nascimento <span class="from">✓ do cadastro</span></label><input id="dobMain" value="{{ $json.pessoas.find(p => p.relacao === 'Titular')?.nascimento }}" type="date"></div>
-            <div class="field"><label for="ckDocTipo">Documento do titular</label><select id="ckDocTipo"><option value="1">SSN</option><option value="2">ITIN</option><option value="3">Passaporte</option><option value="0">CPF</option></select></div>
+            <div class="field" hidden><label for="ckDocTipo">Documento do titular</label><select id="ckDocTipo"><option value="1">SSN</option><option value="2">ITIN</option><option value="3">Passaporte</option><option value="0">CPF</option></select></div>
             <div class="field"><label for="ckDoc">Número do documento</label><input id="ckDoc" inputmode="text" autocomplete="off" placeholder="Usado para criar o seu acesso ao Easy Doctors"></div>
           </div>
           <div class="deps-title">Dependentes</div>
