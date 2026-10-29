@@ -314,6 +314,7 @@ footer p+p{margin-top:8px}
 .field input:focus,.field select:focus{border-color:var(--indigo-2);outline:none;background:#fff}
 .field.full{grid-column:1 / -1}
 .field .from{font-size:11px;color:var(--mint);font-weight:700;margin-left:6px}
+#sheet [hidden]{display:none!important}
 .deps-title{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--indigo-2);margin:22px 0 10px}
 .dep{display:grid;grid-template-columns:1.3fr .9fr 1.1fr 46px;gap:10px;align-items:end;margin-bottom:10px}
 .dep .rm{height:46px;width:46px;border-radius:12px;border:1.5px solid var(--line);background:#fff;cursor:pointer;color:var(--mute);font-size:18px}
@@ -1852,8 +1853,24 @@ td.decide-cell{padding:12px 10px}
 
     <!-- step 1 -->
     <div class="step active" id="st1">
-      <h3 id="ck-t">3 perguntas para o seu valor exato</h3>
+      <h3 id="ck-t">Confirme seus dados</h3>
       <p class="s-lede">Sua previsão foi de <b id="ckFore">US$ 187,90/mês</b>. Confirme abaixo e calculamos o valor exato. Você só paga depois de ver.</p>
+
+      <div class="qk" data-show="base">
+        <div class="qk-n">1</div>
+        <div class="qk-b">
+          <div class="qk-t">Quem vai usar?</div>
+          <small class="qk-h">Só a quantidade define o plano. Os dependentes são incluídos por você dentro do Easy Doctors, depois da ativação.</small>
+          <div class="seg" role="radiogroup">
+            <label><input type="radio" name="who" value="eu" checked>Apenas eu</label>
+            <label><input type="radio" name="who" value="dep">Eu + dependentes</label>
+          </div>
+          <div class="fields" id="whoDepsBox" hidden>
+            <div class="field"><label for="whoDeps">Quantos dependentes?</label><select id="whoDeps"><option value="1">1 dependente</option><option value="2">2 dependentes</option><option value="3">3 dependentes</option><option value="4">4 dependentes</option><option value="5">5 dependentes</option><option value="6">6 dependentes</option></select></div>
+          </div>
+          <small class="qk-h" id="whoPrice" style="display:block;margin-top:10px"></small>
+        </div>
+      </div>
 
       <div class="qk">
         <div class="qk-n">1</div>
@@ -1863,10 +1880,11 @@ td.decide-cell{padding:12px 10px}
           <div class="fields">
             <div class="field"><label>Nome completo <span class="from">✓ do cadastro</span></label><input id="ckName" value="{{$json.nome_completo}}"></div>
             <div class="field"><label>Data de nascimento <span class="from">✓ do cadastro</span></label><input id="dobMain" value="{{ $json.pessoas.find(p => p.relacao === 'Titular')?.nascimento }}" type="date"></div>
-            <div class="field"><label for="ckDocTipo">Documento do titular</label><select id="ckDocTipo"><option value="0" selected>CPF</option><option value="1">SSN</option><option value="2">ITIN</option><option value="3">Passaporte</option></select></div>
-            <div class="field"><label for="ckDoc">Número do documento</label><input id="ckDoc" inputmode="text" autocomplete="off" placeholder="Usado para criar o seu acesso ao Easy Doctors"></div>
+            <div class="field" data-show="base"><label for="ckSexo">Sexo</label><select id="ckSexo"><option value="">Selecione</option><option value="female">Feminino</option><option value="male">Masculino</option></select></div>
+            <div class="field" data-show="base"><label for="ckDocTipo">Documento do titular</label><select id="ckDocTipo"><option value="0" selected>CPF</option><option value="1">SSN</option><option value="2">ITIN</option><option value="3">Passaporte</option></select></div>
+            <div class="field" data-show="base"><label for="ckDoc">Número do documento</label><input id="ckDoc" inputmode="text" autocomplete="off" placeholder="Usado para criar o seu acesso ao Easy Doctors"></div>
           </div>
-          <small class="qk-h" style="display:block;margin-top:14px">Só o titular é cadastrado agora. Os dependentes são incluídos por você dentro do Easy Doctors, depois da ativação.</small>
+          <small class="qk-h" id="ckDepsNote" style="display:block;margin-top:14px"></small>
           <div hidden><!-- dependentes ficam ocultos: vêm do simulador e só servem para calcular o preço (individual/família) -->
           <div class="deps-title">Dependentes</div>
           <div id="deps"></div>
@@ -1882,7 +1900,20 @@ td.decide-cell{padding:12px 10px}
           <small class="qk-h">A rede de clínicas e o preço final dependem do seu ZIP code.</small>
           <div class="fields">
             <div class="field"><label>ZIP code <span class="from">✓ do cadastro</span></label><input id="zip" value="{{$json.zip}}" inputmode="numeric"></div>
-            <div class="field"><label>Início da cobertura</label><select id="ckStart"><option value="2027-01-01">1º de janeiro de 2027</option></select></div>
+            <div class="field" data-show="base plus plus+hosp hosp presidio st"><label>Início da cobertura</label><select id="ckStart"><option value="2027-01-01">1º de janeiro de 2027</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="qk" data-show="presidio st img">
+        <div class="qk-n">2</div>
+        <div class="qk-b">
+          <div class="qk-t" id="durT">Por quanto tempo?</div>
+          <small class="qk-h" id="durH">Escolha a duração da cobertura.</small>
+          <div class="fields">
+            <div class="field" data-show="presidio st"><label for="ckDur">Duração</label><select id="ckDur"></select></div>
+            <div class="field" data-show="img"><label for="ckIda">Data de ida</label><input id="ckIda" type="date" value="2027-01-01"></div>
+            <div class="field" data-show="img"><label for="ckVolta">Data de volta</label><input id="ckVolta" type="date"></div>
           </div>
         </div>
       </div>
@@ -1953,6 +1984,14 @@ td.decide-cell{padding:12px 10px}
         <p class="mk-err" id="payErr" hidden></p>
         <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="finish">Ir para o pagamento seguro →</button></div>
         <p class="secure">🔒 Os dados do cartão são digitados no Stripe e não passam pela 2Easy.</p>
+      </div>
+      <div id="payCrm" hidden>
+        <p class="s-lede" id="crmLede">Para concluir, preencha o formulário seguro da 2Easy. O pagamento é por conta bancária, informada no próprio formulário. Nada é cobrado hoje.</p>
+        <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt3">US$ 0,00</b></div>
+        <div id="crmForms"></div>
+        <p class="mk-err" id="crmErr" hidden></p>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="crmGo">Continuar para o formulário →</button></div>
+        <p class="secure">🔒 Os dados bancários são digitados no formulário da 2Easy e não passam por esta página.</p>
       </div>
       <div id="paySpec" hidden>
         <p class="s-lede">Este plano é contratado com a seguradora. Um especialista da 2Easy finaliza a contratação com você, em português, e confirma a forma de pagamento.</p>
@@ -2091,9 +2130,19 @@ td.decide-cell{padding:12px 10px}
     const f=ages.reduce((t,a)=>t+ageF(a),0)*(zipF||1);
     return n===1 ? Math.round(P.ind*ageF(ages[0])*(zipF||1)) : Math.round(P.fam3*f/REF_FAM);
   }
+  /* ===== Planos por estado (estado vem do ZIP) ===== */
+  const ZIP3 = [[5,5,'NY'],[10,27,'MA'],[28,29,'RI'],[30,38,'NH'],[39,49,'ME'],[50,54,'VT'],[55,55,'MA'],[56,59,'VT'],[60,69,'CT'],[70,89,'NJ'],[100,149,'NY'],[150,196,'PA'],[197,199,'DE'],[200,200,'DC'],[201,201,'VA'],[202,205,'DC'],[206,219,'MD'],[220,246,'VA'],[247,268,'WV'],[270,289,'NC'],[290,299,'SC'],[300,319,'GA'],[320,349,'FL'],[350,369,'AL'],[370,385,'TN'],[386,397,'MS'],[398,399,'GA'],[400,427,'KY'],[430,459,'OH'],[460,479,'IN'],[480,499,'MI'],[500,528,'IA'],[530,549,'WI'],[550,567,'MN'],[569,569,'DC'],[570,577,'SD'],[580,588,'ND'],[590,599,'MT'],[600,629,'IL'],[630,658,'MO'],[660,679,'KS'],[680,693,'NE'],[700,714,'LA'],[716,729,'AR'],[730,732,'OK'],[733,733,'TX'],[734,749,'OK'],[750,799,'TX'],[800,816,'CO'],[820,831,'WY'],[832,838,'ID'],[840,847,'UT'],[850,865,'AZ'],[870,884,'NM'],[885,885,'TX'],[889,898,'NV'],[900,961,'CA'],[967,968,'HI'],[970,979,'OR'],[980,994,'WA'],[995,999,'AK']];
+  const estadoDoZip = z => { const m=String(z||'').match(/^(\d{3})\d{2}$/); if(!m) return null; const n=+m[1]; const r=ZIP3.find(x=>n>=x[0]&&n<=x[1]); return r?r[2]:null; };
+  const ESTADOS_PLANO = {
+    presidio:['TX'],
+    st:['IN','FL','CA','UT','OH','MD','TX','SC','CT','GA','VA','AZ','NC','PA','NJ','CO','MI'],
+    img:['AL','AZ','CA','CO','CT','DC','FL','GA','IN','ME','MD','MA','NV','NH','NJ','NY','NC','PA','RI','SC','TX','UT','VA','WA']
+  };
+  const estadoCliente = () => estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim()) || estadoDoZip('{{$json.zip}}');
+  const planoNoEstado = o => { const uf=estadoCliente(); return o.k.every(id=>!ESTADOS_PLANO[id] || (uf && ESTADOS_PLANO[id].includes(uf))); };
   function build(ages){
     const oldest=Math.max(...ages);
-    return OPTIONS.map(o=>{
+    return OPTIONS.filter(planoNoEstado).map(o=>{
       const parts=o.k.map(id=>({id,name:PLANS[id].name,price:planPrice(id,ages)}));
       const blocked=o.k.some(id=>PLANS[id].maxAge && oldest>PLANS[id].maxAge);
       return Object.assign({},o,{parts,price:+parts.reduce((t,x)=>t+x.price,0).toFixed(2),name:parts.map(x=>x.name).join(' + '),from:o.k.some(id=>PLANS[id].from),blocked});
@@ -2129,7 +2178,7 @@ td.decide-cell{padding:12px 10px}
   ['apName','apAge'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault(); addPerson();} }));
 
   $('goCalc').addEventListener('click',()=>{
-    cotarMarketplace();
+    cotarMarketplace(); window.__portal && window.__portal('simulator_started');
     const ages = peopleAll().filter(p=>p.checked).map(p=>+p.dataset.age);
     ranked = build(ages);
     const keep = current.opt && ranked.find(r=>r.key===current.opt.key && !r.blocked);
@@ -2342,7 +2391,7 @@ td.decide-cell{padding:12px 10px}
     const ehTitular=p=>!!tit && p.dataset.dob===tit.dataset.dob && p.dataset.name.split(' ')[0]===tit.dataset.name.split(' ')[0];
     $('deps').innerHTML='';
     peopleAll().filter(p=>p.checked && p.dataset.rel!=='Titular' && !ehTitular(p)).forEach(p=>$('deps').appendChild(depRow({n:p.dataset.name,r:p.dataset.rel,d:p.dataset.dob})));
-    openCk && openCk(); goStep(1); $('sheet').classList.add('open'); document.body.classList.add('lock');
+    openCk && openCk(); aplicaFormulario(); goStep(1); $('sheet').classList.add('open'); document.body.classList.add('lock');
   }
   $('openCheckout').addEventListener('click',openCheckout);
   document.querySelectorAll('[data-open-checkout]').forEach(b=>b.addEventListener('click',()=>{ if(!$('openCheckout').disabled) openCheckout(); }));
@@ -2358,19 +2407,19 @@ td.decide-cell{padding:12px 10px}
     $('hqWarn').classList.toggle('show', r.value==='sim' && r.checked);
   });
   $('toQuote').onclick=()=>{
-    /* Easy Doctors Base (pagamento pelo Stripe): documento e limite de pessoas são conferidos aqui, no passo 1 */
-    const soBase = current.opt && current.opt.k.length===1 && current.opt.k[0]==='base';
-    const nPessoas = 1+$('deps').querySelectorAll('.dep').length;
-    const erro1 = !soBase ? null : (!$('ckDoc').value.trim() ? 'Informe o número do documento do titular para continuar.' : (nPessoas>4 ? 'O Easy Doctors Base atende até 4 pessoas. Fale com um especialista para incluir toda a família.' : null));
-    $('ckErr').hidden = !erro1; $('ckErr').textContent = erro1 || '';
-    if(erro1){ $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); if(!$('ckDoc').value.trim()) $('ckDoc').focus(); return; }
+    /* validação do passo 1 conforme o plano escolhido */
+    const v1 = validaPasso1();
+    $('ckErr').hidden = !v1; $('ckErr').textContent = v1 ? v1.msg : '';
+    if(v1){ $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); if(v1.el && $(v1.el)) $(v1.el).focus(); return; }
     goStep(2); $('qLoading').style.display='block'; $('qReady').style.display='none';
     const dobs=[$('dobMain').value,...[...$('deps').querySelectorAll('input[type=date]')].map(i=>i.value)];
     const ages=dobs.map(ageOn).filter(a=>a!==null && a>=0);
     const zip=($('zip').value||'').trim();
     const zipF = /^3[2-4]/.test(zip)?1:1.04;
-    const fam = ages.length===1?'Individual':'Família · '+ages.length+' pessoas';
-    const parts = current.opt.k.map(id=>({name:PLANS[id].name,price:planPrice(id,ages.length?ages:current.ages,zipF)}));
+    const fam0 = ages.length===1?'Individual':'Família · '+ages.length+' pessoas';
+    const ehBase = formModo()==='stripe';
+    const fam = ehBase ? baseFam() : fam0;
+    const parts = ehBase ? [{name:PLANS.base.name, price:basePreco().valor}] : current.opt.k.map(id=>({name:PLANS[id].name,price:planPrice(id,ages.length?ages:current.ages,zipF)}));
     const tot = +parts.reduce((t,x)=>t+x.price,0).toFixed(2);
     current.exact=tot;
     setTimeout(()=>{
@@ -2388,7 +2437,7 @@ td.decide-cell{padding:12px 10px}
         parts.map(x=>`<div><span>${x.name} · ${fam}</span><b>US$ ${fmt(x.price)}</b></div>`).join('')+
         (CONC && current.opt.k.includes('plus')?`<div class="giftline"><span>★ Concierge 2Easy (12 meses) <s>US$ 100,00</s></span><b>US$ 0,00 · prêmio</b></div>`:'')+
         `<div><span>Taxa de adesão</span><b>US$ 0,00</b></div>`+
-        `<div class="tot"><span>Mensalidade a partir de jan. 2027</span><span>US$ ${fmt(tot)}</span></div>`+
+        `<div class="tot"><span>${formModo()==='stripe'?'Mensalidade a partir de jan. 2027':'Mensalidade prevista a partir de jan. 2027'}</span><span>US$ ${fmt(tot)}</span></div>`+
         `<div class="tot" style="color:var(--mint)"><span style="color:var(--mint)">Você paga hoje</span><span>US$ 0,00</span></div>`;
     },1600);
   };
@@ -2409,9 +2458,10 @@ td.decide-cell{padding:12px 10px}
   const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
   const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
   $('toPay').onclick=()=>{
-    const viaStripe = current.opt.k.length===1 && STRIPE_PLANS.includes(current.opt.k[0]);
-    $('payStripe').hidden = !viaStripe; $('paySpec').hidden = viaStripe;
-    $('payAmt').textContent = $('payAmt2').textContent = 'US$ '+fmt(current.exact);
+    const viaStripe = formModo()==='stripe';
+    $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe;
+    $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = 'US$ '+fmt(current.exact);
+    if(!viaStripe) crmPrepara();
     $('pwInicio').textContent = 'Você não paga nada hoje. A 1ª mensalidade é cobrada em '+DATAS[$('ckStart').value]+'.';
     $('payErr').hidden = true;
     goStep(3);
@@ -2424,15 +2474,16 @@ td.decide-cell{padding:12px 10px}
     const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
     let d=null;
     try{
-      const pessoas=1+$('deps').querySelectorAll('.dep').length;
-      const doc=$('ckDoc').value.trim();
-      const falha = !doc ? ERRO_DOC : (pessoas>MAX_PESSOAS_BASE ? ERRO_MAX_PESSOAS : null);
+      const bp=basePreco(), pessoas=bp.pessoas;
+      const doc=$('ckDoc').value.replace(/[^0-9A-Za-z]/g,'');
+      const falha = !doc ? ERRO_DOC : null;
       if(falha){ $('payErr').textContent=falha; $('payErr').hidden=false; b.disabled=false; b.textContent='Ir para o pagamento seguro →'; return; }
       const r=await fetch(PAGAMENTO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         pedido_id:q.get('policy'), client_reference_id:q.get('policy'),
         nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value),
         tipoDocumento:Number($('ckDocTipo').value), numeroDocumento:doc,
-        stripe_price_id: pessoas===1 ? PRICE_BASE.individual : PRICE_BASE.familia,
+        stripe_price_id: bp.price_id, valor_total: bp.valor, dependentes: pessoas-1, tipo_plano: pessoas===1?'titular':'titular_dependentes', plano_nome: bp.nome,
+        genero: $('ckSexo').value, data_nascimento: $('dobMain').value,
         inicio_janeiro: pagar==='inicio', inicio:$('ckStart').value,
         success_url:volta('ok'), cancel_url:volta('cancelado'), origin_url:location.origin+location.pathname+'?policy='+encodeURIComponent(q.get('policy')||'')+'&key='+encodeURIComponent(q.get('key')||''),
         vendedor:'', URL_utmfy:location.href,
@@ -2442,6 +2493,156 @@ td.decide-cell{padding:12px 10px}
     if(d && d.success && d.data && d.data.checkout_url){ location.href=d.data.checkout_url; return; }
     $('payErr').textContent = (d && d.error==='cliente_ja_cadastrado') ? ERRO_JA_CLIENTE : ((d && (d.erro || d.message)) || ERRO_PAG); $('payErr').hidden=false;
     b.disabled=false; b.textContent='Ir para o pagamento seguro →';
+  };
+  /* ===== Formulário que se adapta ao plano escolhido ===== */
+  /* modo: 'stripe' = Easy Doctors Base (v2 + Stripe, cobrança em 01/01) · 'crm' = demais planos (formulário do CRM, conta bancária) */
+  const SAUDEMAX_URL = 'https://enroll.saude-max.com/elizalo/enroll/f429483e-4b37-410e-8e6e-43924c09dcf5?membership=member&iua=1500&age=18-65&agent=659026';
+  const FORMS = {
+    base:        {modo:'stripe'},
+    plus:        {modo:'crm'},
+    'plus+hosp': {modo:'crm', link:SAUDEMAX_URL},
+    hosp:        {modo:'crm', link:SAUDEMAX_URL},
+    presidio:    {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
+    st:          {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
+    img:         {modo:'crm', viagem:true}
+  };
+  const DUR_PT = {'Monthly':'Mensal','3 months':'3 meses','6 months':'6 meses','9 months':'9 meses','1 Year':'1 ano','3 Years':'3 anos'};
+  const INSURANCE = {plus:'Unity Care Center', hosp:'SaudeMax', presidio:'Fortress Plan', st:'Short Term', img:'IMG Insurance', base:'EasyDoctors'};
+  const formCfg = () => FORMS[current.opt && current.opt.key] || {modo:'crm'};
+  const formModo = () => formCfg().modo;
+  /* Base · mesma lógica do formulário EasyDoctors (Igor): só a quantidade; até 3 dependentes = Básico; 4 a 6 = Família +1/+2/+3 */
+  const BASE_PRECOS = [
+    {pessoas:1, nome:'Plano Individual', valor:29.90, price_id:'price_1SCteYGbfw1lxjkC8rdVqyce'},
+    {pessoas:4, nome:'Plano Básico',     valor:49.90, price_id:'price_1SCmotGbfw1lxjkCggettiPx'},
+    {pessoas:5, nome:'Plano Família +1', valor:64.80, price_id:'price_1SKm9fGbfw1lxjkCIZtJHWro'},
+    {pessoas:6, nome:'Plano Família +2', valor:79.70, price_id:'price_1SKmAlGbfw1lxjkCIAHUXKBj'},
+    {pessoas:7, nome:'Plano Família +3', valor:94.60, price_id:'price_1SKmBZGbfw1lxjkCiJ7xYXf6'}
+  ];
+  const nBase = () => { const w=document.querySelector('input[name=who]:checked'); return (!w || w.value==='eu') ? 1 : 1+(+$('whoDeps').value||1); };
+  const basePreco = () => { const n=nBase(); return Object.assign({}, BASE_PRECOS.find(p=>n<=p.pessoas), {pessoas:n}); };
+  const baseFam = () => { const n=nBase(); return n===1 ? 'Individual' : 'Família · '+n+' pessoas'; };
+  function atualizaWho(){
+    const dep = (document.querySelector('input[name=who]:checked')||{}).value==='dep';
+    $('whoDepsBox').hidden = !dep;
+    const p=basePreco();
+    $('whoPrice').textContent = p.nome+' · US$ '+fmt(p.valor)+'/mês'+(p.pessoas>4?' (inclui '+(p.pessoas-4)+' dependente'+(p.pessoas-4>1?'s':'')+' extra'+(p.pessoas-4>1?'s':'')+')':'');
+  }
+  document.querySelectorAll('input[name=who]').forEach(r=>r.onchange=atualizaWho);
+  $('whoDeps').onchange=atualizaWho;
+  function aplicaFormulario(){
+    const key = current.opt ? current.opt.key : '';
+    document.querySelectorAll('#sheet [data-show]').forEach(el=>{ el.hidden = !el.dataset.show.split(' ').includes(key); });
+    /* numera os blocos visíveis do passo 1 */
+    let i=0; document.querySelectorAll('#st1 .qk:not(.qk-c)').forEach(q=>{ if(!q.hidden){ const n=q.querySelector('.qk-n'); if(n) n.textContent=++i; } });
+    const cfg=formCfg();
+    if(cfg.dur){ $('ckDur').innerHTML = cfg.dur.map(d=>`<option value="${d}">${DUR_PT[d]||d}</option>`).join(''); }
+    $('durT').textContent = cfg.viagem ? 'Datas da viagem' : 'Por quanto tempo?';
+    $('durH').textContent = cfg.viagem ? 'O IMG cobre o período entre a ida e a volta.' : 'Escolha a duração da cobertura.';
+    const nSim = 1+$('deps').querySelectorAll('.dep').length;
+    $('ckDepsNote').textContent = cfg.modo==='stripe'
+      ? ''
+      : (nSim>1 ? 'Entram no plano as '+nSim+' pessoas que você marcou no simulador. Para mudar, volte e ajuste quem entra no plano.' : 'Entra no plano só o titular, como você marcou no simulador.');
+    $('ckDepsNote').hidden = !$('ckDepsNote').textContent;
+    atualizaWho();
+    crmReset();
+  }
+  /* validações do passo 1 */
+  const cpfOk = c => { c=String(c).replace(/\D/g,''); if(c.length!==11 || /^(\d)\1{10}$/.test(c)) return false; let s=0; for(let i=0;i<9;i++) s+=+c[i]*(10-i); let d=(s*10)%11%10; if(d!==+c[9]) return false; s=0; for(let i=0;i<10;i++) s+=+c[i]*(11-i); d=(s*10)%11%10; return d===+c[10]; };
+  function docOk(tipo, n){
+    const d=String(n).replace(/[^0-9A-Za-z]/g,'');
+    if(tipo==='0') return cpfOk(d);
+    if(tipo==='1') return /^\d{9}$/.test(d);
+    if(tipo==='2') return /^9\d{8}$/.test(d);
+    return /^[0-9A-Za-z]{5,20}$/.test(d);
+  }
+  function validaPasso1(){
+    const cfg=formCfg(), nome=$('ckName').value.trim(), tel=String($('ckPhone').value).replace(/\D/g,''), email=$('ckEmail').value.trim();
+    if(nome.split(/\s+/).length<2) return {msg:'Informe o nome completo do titular (nome e sobrenome).', el:'ckName'};
+    if(tel.length<10) return {msg:'Informe um telefone válido com DDD.', el:'ckPhone'};
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return {msg:'Informe um e-mail válido.', el:'ckEmail'};
+    if(cfg.modo==='stripe'){
+      const idade=ageOn($('dobMain').value);
+      if(idade===null || idade<18) return {msg:'O titular precisa ter 18 anos ou mais. Confira a data de nascimento.', el:'dobMain'};
+      if(!$('ckSexo').value) return {msg:'Escolha o sexo do titular.', el:'ckSexo'};
+      if(!$('ckDoc').value.trim()) return {msg:'Informe o número do documento do titular para continuar.', el:'ckDoc'};
+      if(!docOk($('ckDocTipo').value, $('ckDoc').value)) return {msg:'Confira o número do documento: ele não parece válido para o tipo escolhido.', el:'ckDoc'};
+    }
+    if(cfg.viagem){
+      const ida=$('ckIda').value, volta=$('ckVolta').value;
+      if(!ida || !volta) return {msg:'Informe as datas de ida e de volta.', el: ida?'ckVolta':'ckIda'};
+      if(volta<=ida) return {msg:'A data de volta precisa ser depois da data de ida.', el:'ckVolta'};
+    }
+    return null;
+  }
+  /* ===== CRM (planos que não são o Base) ===== */
+  /* PORTAL_URL: ponte n8n → função do CRM (doc do Luiz). Vazio = ainda não ligada: a página usa o caminho reserva (especialista). */
+  const PORTAL_URL = '';
+  const DUR_MESES = {'Monthly':1,'3 months':3,'6 months':6,'9 months':9,'1 Year':12,'3 Years':36};
+  const somaMeses = (iso,m) => { const d=new Date(iso+'T12:00:00Z'); d.setUTCMonth(d.getUTCMonth()+m); d.setUTCDate(d.getUTCDate()-1); return d.toISOString().slice(0,10); };
+  function crmPlans(){
+    const key=current.opt.key, cfg=formCfg(), n=1+$('deps').querySelectorAll('.dep').length;
+    const insured=['Owner'].concat(Array.from({length:n-1},(_,i)=>'Dep '+(i+1)));
+    const start=$('ckStart').value||'2027-01-01';
+    return current.opt.k.map(id=>{
+      const it={insurance_type:INSURANCE[id], plan_name:PLANS[id].name+(n>1?' Família':' Individual'), monthly_premium:+planPrice(id,current.ages,1).toFixed(2), start_date:start, insured};
+      if(cfg.dur){ it.duration=$('ckDur').value; it.end_date=somaMeses(start, DUR_MESES[it.duration]||1); }
+      if(cfg.viagem){ it.start_date=$('ckIda').value; it.end_date=$('ckVolta').value; it.duration='Per Trip (days)'; }
+      if(id==='st') it.carrier=''; /* seguradora do Short Term: a definir com a Rose */
+      return it;
+    });
+  }
+  async function portal(event, extra){
+    if(!PORTAL_URL) return {ok:false, error:'portal_off'};
+    const q=new URLSearchParams(location.search);
+    try{
+      const r=await fetch(PORTAL_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({event, policy:q.get('policy'), key:q.get('key')}, extra||{}))});
+      return await r.json();
+    }catch(e){ return {ok:false, error:'rede'}; }
+  }
+  window.__portal = portal;
+  let crmEstado='inicio';
+  function crmReset(){ crmEstado='inicio'; $('crmForms').innerHTML=''; $('crmErr').hidden=true; $('crmGo').disabled=false; $('crmGo').textContent='Continuar para o formulário →'; }
+  function crmPrepara(){
+    crmReset();
+    const cfg=formCfg();
+    $('crmLede').textContent = 'Para concluir, preencha o formulário seguro da 2Easy. O pagamento é por conta bancária, informada no próprio formulário. Nada é cobrado hoje.'
+      + (cfg.link ? ' Para o Easy Hospital, faça também a inscrição na SaudeMax pelo botão que vai aparecer.' : '');
+  }
+  const crmErro = t => { $('crmErr').textContent=t; $('crmErr').hidden=false; };
+  function crmLinks(policies){
+    const cfg=formCfg();
+    const btns=(policies||[]).filter(p=>p.form_url).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Short Term':'Short Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
+    if(cfg.link) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
+    $('crmForms').innerHTML = btns.join('');
+  }
+  function crmReserva(){
+    /* sem ponte com o CRM (ou cadastro incompleto): um especialista finaliza */
+    const cfg=formCfg(), nome=$('ckName').value.trim();
+    const msg='Olá! Quero contratar o '+current.opt.name+' para 2027. Nome: '+nome+' · Telefone: '+$('ckPhone').value.trim()+' · E-mail: '+$('ckEmail').value.trim();
+    $('crmForms').innerHTML = `<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="https://wa.me/18888862210?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Finalizar com um especialista no WhatsApp →</a>`
+      + (cfg.link ? `<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>` : '');
+    crmErro('Um especialista da 2Easy vai finalizar a contratação com você, em português.');
+    $('crmGo').textContent='Concluir →'; crmEstado='reserva';
+  }
+  function crmConcluido(){
+    $('doneName').textContent = current.opt.name;
+    $('doneStart').textContent = formCfg().viagem ? $('ckIda').value.split('-').reverse().join('/') : (DATAS[$('ckStart').value]||DATAS['2027-01-01']);
+    $('doneCharge').innerHTML = crmEstado==='reserva' ? '<b>Nada foi cobrado hoje</b> · um especialista finaliza a contratação com você' : '<b>Nada foi cobrado hoje</b> · o pagamento é por conta bancária, como informado no formulário';
+    goStep(4); window.__purchased && window.__purchased();
+  }
+  $('crmGo').onclick = async()=>{
+    const b=$('crmGo'); $('crmErr').hidden=true;
+    if(crmEstado==='reserva'){ crmConcluido(); return; }
+    b.disabled=true; b.textContent = crmEstado==='inicio' ? 'Preparando o formulário…' : 'Conferindo…';
+    const d = await portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}});
+    b.disabled=false;
+    if(!d || !d.ok){ crmReserva(); return; }
+    crmLinks(d.policies);
+    b.textContent='Já enviei o formulário · concluir →';
+    if(crmEstado==='inicio'){ crmEstado='formulario'; return; }
+    if((d.policies||[]).some(p=>!p.form_done)){ crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.'); return; }
+    const c = await portal('checkout_completed');
+    if(c && c.ok) crmConcluido(); else crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.');
   };
   /* volta do Stripe: ?pagamento=ok abre a confirmação */
   setTimeout(()=>{
