@@ -2515,7 +2515,7 @@ td.decide-cell{padding:12px 10px}
   const cardErro = t => { $('cardErr').textContent=t; $('cardErr').hidden=false; };
   function cartaoPrepara(){
     $('cardErr').hidden=true; $('cardGo').disabled=false; $('cardGo').textContent='Salvar cartão e concluir →';
-    $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
+    $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01']; if(current.opt && current.opt.key === 'plus+hosp'){ setTimeout(() => { $('payAmt4').textContent = 'US$ ' + fmt(planPrice('plus', current.ages, 1)) + ' (só o Easy Doctors Plus)'; }, 0); }
   }
   $('ccNum').addEventListener('input', e=>{
     const d=soDig(e.target.value).slice(0,19);
@@ -2536,7 +2536,7 @@ td.decide-cell{padding:12px 10px}
     let d=null;
     try{
       const r=await fetch(CARTAO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        policy:q.get('policy'), key:q.get('key'), plano:current.opt.key, pessoas:1+$('deps').querySelectorAll('.dep').length,
+        policy:q.get('policy'), key:q.get('key'), plano:(current.opt.key === 'plus+hosp' ? 'plus' : current.opt.key), combo_hospital:(current.opt.key === 'plus+hosp'), pessoas:1+$('deps').querySelectorAll('.dep').length,
         nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value), zip:$('zip').value.trim(),
         inicio:$('ckStart').value, cartao:v.cartao})});
       d=await r.json();
@@ -2548,7 +2548,7 @@ td.decide-cell{padding:12px 10px}
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
-    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio;
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a>'; }
     goStep(4); window.__purchased && window.__purchased();
   };
   $('toPay').onclick=()=>{
@@ -2594,7 +2594,7 @@ td.decide-cell{padding:12px 10px}
   const FORMS = {
     base:        {modo:'stripe'},
     plus:        {modo:'cartao'},
-    'plus+hosp': {modo:'crm', link:SAUDEMAX_URL},
+    'plus+hosp': {modo:'cartao', link:SAUDEMAX_URL},
     hosp:        {modo:'crm', link:SAUDEMAX_URL},
     presidio:    {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
     st:          {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
