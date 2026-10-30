@@ -2551,7 +2551,7 @@ td.decide-cell{padding:12px 10px}
     $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a>'; }
     goStep(4); window.__purchased && window.__purchased();
   };
-  $('toPay').onclick=()=>{
+  $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__portal('checkout_started', {plans: crmPlans()}); }catch(e){}
     const viaStripe = formModo()==='stripe', viaCartao = formModo()==='cartao';
     $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe || viaCartao; $('payCard').hidden = !viaCartao;
     $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = $('payAmt4').textContent = 'US$ '+fmt(current.exact);
@@ -2681,7 +2681,7 @@ td.decide-cell{padding:12px 10px}
       const it={insurance_type:INSURANCE[id], plan_name:PLANS[id].name+(n>1?' Família':' Individual'), monthly_premium:+planPrice(id,current.ages,1).toFixed(2), start_date:start, insured};
       if(cfg.dur){ it.duration=$('ckDur').value; it.end_date=somaMeses(start, DUR_MESES[it.duration]||1); }
       if(cfg.viagem){ it.start_date=$('ckIda').value; it.end_date=$('ckVolta').value; it.duration='Per Trip (days)'; }
-      if(id === 'base'){ const bp = basePreco(); it.plan_name = 'EasyDoctors Base - ' + bp.nome; it.monthly_premium = bp.valor; it.insured = ['Owner']; } /* Base: plano e valor pela quantidade (BASE_PRECOS); so o titular */ if(id==='st') it.carrier=''; /* seguradora do Short Term: a definir com a Rose */
+      if(id === 'base'){ const bp = basePreco(); it.plan_name = 'EasyDoctors Base - ' + bp.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace('Plano Familia', 'Familia'); /* igual ao nome que o v2 manda */ it.monthly_premium = bp.valor; it.insured = ['Owner']; } /* Base: plano e valor pela quantidade (BASE_PRECOS); so o titular */ if(id==='st') it.carrier=''; /* seguradora do Short Term: a definir com a Rose */
       return it;
     });
   }
