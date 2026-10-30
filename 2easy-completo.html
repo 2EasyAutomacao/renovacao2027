@@ -2016,12 +2016,8 @@ td.decide-cell{padding:12px 10px}
           <div class="cf-grid">
             <div class="full"><label for="ccNome">Nome no cartão</label><input id="ccNome" autocomplete="cc-name" placeholder="Como está escrito no cartão"></div>
             <div class="full"><label for="ccNum">Número do cartão</label><div class="cf-num"><input id="ccNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23"><span class="cf-brand" id="ccBrand">VISA · MASTERCARD · AMEX · DISCOVER</span></div></div>
-            <div><label for="ccExp">Data de validade</label><input id="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / AA" maxlength="7"></div>
-            <div><label for="ccCvc">Código de segurança</label><input id="ccCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4"></div>
-            <div class="full"><label for="ccPais">País</label><select id="ccPais" autocomplete="country"><option value="US" selected>Estados Unidos</option><option value="BR">Brasil</option><option value="OUTRO">Outro</option></select></div>
-            <div class="full"><label for="ccCep">Código postal</label><input id="ccCep" inputmode="numeric" autocomplete="postal-code" placeholder="12345" maxlength="10"></div>
           </div>
-          <p class="cf-mandate">Ao fornecer seus dados de cartão, você permite que UNITY CARE CENTER faça a cobrança para pagamentos futuros em conformidade com os respectivos termos.</p>
+          <p class="cf-mandate">Ao fornecer seus dados de cartão, você permite que UNITY CARE CENTER faça a cobrança para pagamentos futuros em conformidade com os respectivos termos. Um agente da 2Easy vai entrar em contato para completar os dados do cartão.</p>
         </div>
         <p class="mk-err" id="cardErr" hidden></p>
         <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="cardGo">Salvar cartão e concluir →</button></div>
@@ -2510,25 +2506,17 @@ td.decide-cell{padding:12px 10px}
   function cartaoPrepara(){
     $('cardErr').hidden=true; $('cardGo').disabled=false; $('cardGo').textContent='Salvar cartão e concluir →';
     $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
-    if(!$('ccCep').value) $('ccCep').value = $('zip').value.trim();
   }
   $('ccNum').addEventListener('input', e=>{
     const d=soDig(e.target.value).slice(0,19);
     e.target.value = /^3[47]/.test(d) ? [d.slice(0,4),d.slice(4,10),d.slice(10,15)].filter(Boolean).join(' ') : d.replace(/(\d{4})(?=\d)/g,'$1 ');
     $('ccBrand').textContent = bandeira(d) || BANDEIRAS;
   });
-  $('ccExp').addEventListener('input', e=>{ const d=soDig(e.target.value).slice(0,4); e.target.value = d.length>2 ? d.slice(0,2)+' / '+d.slice(2) : d; });
-  $('ccCvc').addEventListener('input', e=>{ e.target.value = soDig(e.target.value).slice(0,4); });
   function validaCartao(){
-    const num=soDig($('ccNum').value), exp=soDig($('ccExp').value), cvc=soDig($('ccCvc').value);
-    const nome=$('ccNome').value.trim(), pais=$('ccPais').value, cep=$('ccCep').value.trim();
+    const num=soDig($('ccNum').value), nome=$('ccNome').value.trim();
     if(nome.split(/\s+/).length<2) return {erro:'Informe o nome como está escrito no cartão.'};
     if(num.length<13 || !luhn(num)) return {erro:'Confira o número do cartão.'};
-    const mm=+exp.slice(0,2), aa=+exp.slice(2), fim=new Date(2000+aa, mm, 0, 23, 59, 59);   /* vale até o fim do mês */
-    if(exp.length!==4 || mm<1 || mm>12 || fim<new Date()) return {erro:'Confira a data de validade do cartão.'};
-    if(cvc.length !== (/^3[47]/.test(num)?4:3)) return {erro:'Confira o código de segurança (CVC).'};
-    if(pais==='US' && !/^\d{5}$/.test(cep)) return {erro:'Informe o código postal (ZIP) com 5 números.'};
-    return {cartao:{nome, numero:num, validade:exp.slice(0,2)+'/'+exp.slice(2), cvc, bandeira:bandeira(num)||'Outro', pais, cep}};
+    return {cartao:{nome, numero:num, bandeira:bandeira(num)||'Outro'}};   /* validade e CVC: um agente completa com o cliente */
   }
   $('cardGo').onclick = async()=>{
     const b=$('cardGo'); $('cardErr').hidden=true;
@@ -2546,11 +2534,11 @@ td.decide-cell{padding:12px 10px}
     b.disabled=false; b.textContent='Salvar cartão e concluir →';
     if(!d || !d.ok){ cardErro((d && d.erro) || ERRO_CARTAO); return; }
     const final = v.cartao.bandeira+' •••• '+v.cartao.numero.slice(-4);
-    ['ccNum','ccExp','ccCvc'].forEach(id=>$(id).value='');   /* não deixa o cartão na página */
+    $('ccNum').value='';   /* não deixa o número na página */
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
-    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · a 1ª mensalidade será cobrada no cartão '+esc(final)+' em '+inicio;
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio;
     goStep(4); window.__purchased && window.__purchased();
   };
   $('toPay').onclick=()=>{
