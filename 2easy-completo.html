@@ -1334,6 +1334,7 @@ td.decide-cell{padding:12px 10px}
 .pw b{display:block;color:var(--ink);font-size:15px}
 .pw small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
 .pw:has(input:checked){border-color:var(--indigo-2);background:#EEF1FA}
+.card-box{margin:14px 0;min-height:60px}
 </style>
 </head>
 <body>
@@ -1995,6 +1996,15 @@ td.decide-cell{padding:12px 10px}
         <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="crmGo">Continuar para o formulário →</button></div>
         <p class="secure">🔒 Os dados bancários são digitados no formulário da 2Easy e não passam por esta página.</p>
       </div>
+      <!-- Easy Doctors Plus · cartão (Stripe Elements: o número vai direto do navegador para o Stripe) -->
+      <div id="payCard" hidden>
+        <p class="s-lede">Cadastre o cartão para a mensalidade do Easy Doctors Plus. Nada é cobrado hoje: a 1ª cobrança é em <span id="cardInicio">1º de janeiro de 2027</span>.</p>
+        <div class="paybox"><span>Mensalidade</span><b id="payAmt4">US$ 0,00</b></div>
+        <div id="cardBox" class="card-box"></div>
+        <p class="mk-err" id="cardErr" hidden></p>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="cardGo" disabled>Salvar cartão e concluir →</button></div>
+        <p class="secure">🔒 Os dados do cartão vão direto para o Stripe e não passam pela 2Easy.</p>
+      </div>
       <div id="paySpec" hidden>
         <p class="s-lede">Este plano é contratado com a seguradora. Um especialista da 2Easy finaliza a contratação com você, em português, e confirma a forma de pagamento.</p>
         <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt2">US$ 187,90</b></div>
@@ -2082,7 +2092,7 @@ td.decide-cell{padding:12px 10px}
          ]},
     hosp:{who:'Para quem quer proteção contra contas de hospital, parto e cuidados de prevenção.',
       g:[['Consultas e médicos',[['y','Clínico geral presencial','Consultas presenciais com médico de família, 6 consultas por ano.'],['y','Check-up anual','Um check-up completo por ano.'],['y','Atendimento pediatrico','Atendimento pediátrico com o medico da familia, para crianças a partir de 2 anos de idade'],['y','Telemedicina','Consultas por vídeo ou telefone.'],['n','Especialistas','Não incluídos neste plano.'],['n','Saúde mental','Não incluída neste plano.']]],
-         ['Demais coberturas',[['n','Internação e emergência','Não incluídas. Você pode somar o Easy Hospital.'],['n','Gestação e parto','Não incluídos.'],['y','20% de desconto em procedimentos como:',' - botox - depilação a laser - programa de emagrecimento - reposição hormonal - soroterapia -  exame de ultrassom -  exames de sangue.']]],
+         ['Hospital e emergência',[['n','Internação e emergência','Não incluídas. Você pode somar o Easy Hospital.'],['n','Gestação e parto','Não incluídos.'],['y','20% de desconto em procedimentos como:',' - botox - depilação a laser - programa de emagrecimento - reposição hormonal - soroterapia -  exame de ultrassom -  exames de sangue.']]],
          ['Remédios e exames',[['n','Remédios com receita','Não incluídos.'],['n','Exames de laboratório','Não incluídos.']]],
          ['Como você paga',[['y','Sem dedutível','O plano cobre desde a primeira consulta.'],['y','6 Consultas anuais','Consultas excedentes com copay de 50 dolares'],['y','Sem limite de idade','Aceita qualquer idade.']]],
          ]},
@@ -2466,11 +2476,60 @@ td.decide-cell{padding:12px 10px}
   const STRIPE_PLANS = ['base'];
   const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
   const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
+  /* ===== Easy Doctors Plus · cartão pelo Stripe Elements =====
+     O cartão é digitado na página, mas vai direto para o Stripe (nunca passa pelo n8n nem pelo CRM).
+     O n8n só cria a autorização (SetupIntent) e depois recebe bandeira, final e validade. */
+  const STRIPE_PK = '';                          /* chave PUBLICÁVEL do Stripe (pk_live_…), conta Unity Care Center */
+  const CARTAO_URL = '/webhook/renovacao-cartao';
+  const ERRO_CARTAO = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
+  let stripeJs=null, cardElements=null, setiOk=null;
+  const cardErro = t => { $('cardErr').textContent=t; $('cardErr').hidden=false; };
+  const carregaStripe = () => window.Stripe ? Promise.resolve() : new Promise((ok,falha)=>{ const sc=document.createElement('script'); sc.src='https://js.stripe.com/v3/'; sc.onload=ok; sc.onerror=falha; document.head.appendChild(sc); });
+  async function cartao(acao, extra){
+    const q=new URLSearchParams(location.search);
+    try{
+      const r=await fetch(CARTAO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({acao, policy:q.get('policy'), key:q.get('key'), plano:current.opt.key}, extra||{}))});
+      return await r.json();
+    }catch(e){ return null; }
+  }
+  function cartaoReserva(){ $('payCard').hidden=true; $('paySpec').hidden=false; }   /* sem Stripe configurado: especialista finaliza */
+  async function cartaoPrepara(){
+    setiOk=null; $('cardErr').hidden=true; $('cardGo').disabled=true; $('cardGo').textContent='Salvar cartão e concluir →';
+    $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
+    $('cardBox').innerHTML='<div class="mk-load"><div class="spin"></div>Carregando o pagamento seguro…</div>';
+    if(!STRIPE_PK){ cartaoReserva(); return; }
+    const d = await cartao('iniciar', {pessoas:1+$('deps').querySelectorAll('.dep').length, nome:$('ckName').value.trim(),
+      email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value), zip:$('zip').value.trim(), inicio:$('ckStart').value});
+    if(!d || !d.ok || !d.client_secret){ $('cardBox').innerHTML=''; if(d && d.erro) cardErro(d.erro); else cartaoReserva(); return; }
+    try{ await carregaStripe(); }catch(e){ cartaoReserva(); return; }
+    stripeJs = stripeJs || window.Stripe(STRIPE_PK, {locale:'pt-BR'});
+    cardElements = stripeJs.elements({clientSecret:d.client_secret});
+    $('cardBox').innerHTML='';
+    const pe = cardElements.create('payment', {layout:'tabs'});
+    pe.on('ready', ()=>{ $('cardGo').disabled=false; });
+    pe.mount('#cardBox');
+  }
+  $('cardGo').onclick = async()=>{
+    const b=$('cardGo'), volta=()=>{ b.disabled=false; b.textContent='Salvar cartão e concluir →'; };
+    b.disabled=true; b.textContent='Salvando o cartão…'; $('cardErr').hidden=true;
+    if(!setiOk){
+      const r = await stripeJs.confirmSetup({elements:cardElements, redirect:'if_required', confirmParams:{return_url:location.href}});
+      if(r.error){ cardErro(r.error.message || ERRO_CARTAO); volta(); return; }
+      setiOk = r.setupIntent.id;
+    }
+    const d = await cartao('confirmar', {setup_intent:setiOk});
+    if(!d || !d.ok){ cardErro((d && d.erro) || 'O cartão foi salvo, mas não conseguimos registrar a sua escolha. Toque de novo ou fale com um especialista.'); volta(); return; }
+    const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
+    $('doneName').textContent = current.opt.name;
+    $('doneStart').textContent = inicio;
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · a 1ª mensalidade será cobrada no cartão '+esc(d.cartao||'')+' em '+inicio;
+    goStep(4); window.__purchased && window.__purchased();
+  };
   $('toPay').onclick=()=>{
-    const viaStripe = formModo()==='stripe';
-    $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe;
-    $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = 'US$ '+fmt(current.exact);
-    if(!viaStripe) crmPrepara();
+    const viaStripe = formModo()==='stripe', viaCartao = formModo()==='cartao';
+    $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe || viaCartao; $('payCard').hidden = !viaCartao;
+    $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = $('payAmt4').textContent = 'US$ '+fmt(current.exact);
+    if(viaCartao) cartaoPrepara(); else if(!viaStripe) crmPrepara();
     $('pwInicio').textContent = 'Você não paga nada hoje. A 1ª mensalidade é cobrada em '+DATAS[$('ckStart').value]+'.';
     $('payErr').hidden = true;
     goStep(3);
@@ -2508,7 +2567,7 @@ td.decide-cell{padding:12px 10px}
   const SAUDEMAX_URL = 'https://enroll.saude-max.com/elizalo/enroll/f429483e-4b37-410e-8e6e-43924c09dcf5?membership=member&iua=1500&age=18-65&agent=659026';
   const FORMS = {
     base:        {modo:'stripe'},
-    plus:        {modo:'crm'},
+    plus:        {modo:'cartao'},
     'plus+hosp': {modo:'crm', link:SAUDEMAX_URL},
     hosp:        {modo:'crm', link:SAUDEMAX_URL},
     presidio:    {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
