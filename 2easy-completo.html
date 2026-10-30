@@ -2085,7 +2085,8 @@ td.decide-cell{padding:12px 10px}
     {key:'plus', k:['plus'], tag:'Consultas sem custo extra', line:'Clínico geral, check-up e pediatria sem dedutível e sem copay.',
      f:{pcp:1,pedi:1,conc:1,chk:1,arx:1,tele:1}, cost:''},
     {key:'plus+hosp', k:['plus','hosp'], tag:'Proteção completa', line:'Consultas sem custo extra mais internação, emergência e parto.',
-     f:{pcp:1,hosp:1,ihosp:1,gest:1,chk:1,pedi:1,conc:1,tele:1,arx:1}, cost:'Limites do pacote preventivo (regras do contrato)'},
+     ocultar:['20% de desconto em procedimentos como:','Atendimento pediátrico'],
+     f:{pcp:1,hosp:1,ihosp:1,gest:1,chk:1,conc:1,tele:1,arx:1}, cost:'Limites do pacote preventivo (regras do contrato)'},
     {key:'hosp', k:['hosp'], tag:'Foco em hospital', line:'Plano hospitalar com internação ilimitada**: internação e emergência, gestação e parto.',
      f:{pcp:1,hosp:1,gest:1,tele:1}, cost:'Com dedutível · sem copay'},
     {key:'presidio', k:['presidio'], tag:'Hospital ilimitado', line:'Hospital ilimitado, clínico, especialistas e remédios.',
@@ -2134,17 +2135,26 @@ td.decide-cell{padding:12px 10px}
   function detailsOf(r){
     const order=['Consultas e médicos','Hospital e emergência','Demais benefícios','Remédios e exames','Como você paga','Extras 2Easy'];
     const rank={y:3,h:2,i:1,n:0};
+    const norm=t=>t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();   /* ignora acentos: pediátrico = pediatrico */
+    const ocultar=new Set((r.ocultar||[]).map(norm));   /* itens que esta opção não mostra */
     const map={};
     r.k.forEach(id=>DET[id].g.forEach(([g,items])=>{
       map[g]=map[g]||{};
       items.forEach(([st,t,d])=>{
-        const key=t.replace(/ ilimitadas| com limite| presencial/,'').split(' de US$')[0];
+        if(ocultar.has(norm(t))) return;
+        const key=norm(t.replace(/ ilimitadas| com limite| presencial/,'').split(' de US$')[0]);
         const cur=map[g][key];
         if(r.k.length>1 && g==='Como você paga'){ map[g][t+id]=[st,(PLANS[id].name)+': '+t,d]; return; }
         if(!cur || rank[st]>rank[cur[0]]) map[g][key]=[st,t,d];
       });
     }));
-    return [...order, ...Object.keys(map).filter(g=>!order.includes(g))].filter(g=>map[g]).map(g=>[g,Object.values(map[g]).sort((a,b)=>(a[0]==='n')-(b[0]==='n'))]);
+    /* combo: o mesmo item em grupos diferentes dos dois planos aparece uma vez só, com o melhor status */
+    if(r.k.length>1){
+      const melhor={};
+      Object.entries(map).forEach(([g,m])=>Object.entries(m).forEach(([k,v])=>{ if(!melhor[k] || rank[v[0]]>rank[melhor[k].st]) melhor[k]={st:v[0],g}; }));
+      Object.entries(map).forEach(([g,m])=>Object.keys(m).forEach(k=>{ if(melhor[k].g!==g) delete m[k]; }));
+    }
+    return [...order, ...Object.keys(map).filter(g=>!order.includes(g))].filter(g=>map[g] && Object.keys(map[g]).length).map(g=>[g,Object.values(map[g]).sort((a,b)=>(a[0]==='n')-(b[0]==='n'))]);
   }
   const ICON={y:'✓',h:'½',i:'i',n:'—'};
   const LUPA=(m)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7.5 10.5h6${m?'':'M10.5 7.5v6'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
