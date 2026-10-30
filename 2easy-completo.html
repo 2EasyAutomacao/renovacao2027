@@ -2104,7 +2104,7 @@ td.decide-cell{padding:12px 10px}
   };
   if(!CONC) DET.plus.g = DET.plus.g.filter(([g]) => g !== 'Extras 2Easy');
   function detailsOf(r){
-    const order=['Consultas e médicos','Hospital e emergência','Remédios e exames','Como você paga','Extras 2Easy'];
+    const order=['Consultas e médicos','Hospital e emergência','Demais benefícios','Remédios e exames','Como você paga','Extras 2Easy'];
     const rank={y:3,h:2,i:1,n:0};
     const map={};
     r.k.forEach(id=>DET[id].g.forEach(([g,items])=>{
@@ -2116,7 +2116,7 @@ td.decide-cell{padding:12px 10px}
         if(!cur || rank[st]>rank[cur[0]]) map[g][key]=[st,t,d];
       });
     }));
-    return order.filter(g=>map[g]).map(g=>[g,Object.values(map[g]).sort((a,b)=>(a[0]==='n')-(b[0]==='n'))]);
+    return [...order, ...Object.keys(map).filter(g=>!order.includes(g))].filter(g=>map[g]).map(g=>[g,Object.values(map[g]).sort((a,b)=>(a[0]==='n')-(b[0]==='n'))]);
   }
   const ICON={y:'✓',h:'½',i:'i',n:'—'};
   const LUPA=(m)=>`<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><path d="M7.5 10.5h6${m?'':'M10.5 7.5v6'}" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>`;
