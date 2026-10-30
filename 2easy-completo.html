@@ -1334,7 +1334,18 @@ td.decide-cell{padding:12px 10px}
 .pw b{display:block;color:var(--ink);font-size:15px}
 .pw small{display:block;color:var(--mute);font-size:13px;margin-top:2px}
 .pw:has(input:checked){border-color:var(--indigo-2);background:#EEF1FA}
-.card-box{margin:14px 0;min-height:60px}
+.card-form{border:1px solid var(--line);border-radius:12px;padding:16px;margin:14px 0;background:#fff}
+.cf-tab{display:flex;align-items:center;gap:12px;color:#2F6FDB;font-weight:600;font-size:15px;margin-bottom:14px}
+.cf-ic{width:22px;height:16px;border-radius:3px;background:#2F6FDB;box-shadow:inset 0 4px 0 #fff, inset 0 7px 0 #2F6FDB}
+.cf-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cf-grid .full{grid-column:1/-1}
+.card-form label{display:block;font-size:14px;color:var(--ink);margin-bottom:6px}
+.card-form input,.card-form select{width:100%;min-height:46px;border:1px solid var(--line);border-radius:8px;padding:0 12px;font:inherit;font-size:16px;background:#fff;color:var(--ink);box-sizing:border-box}
+.card-form input:focus,.card-form select:focus{outline:2px solid #2F6FDB;outline-offset:0}
+.cf-num{position:relative}
+.cf-num input{padding-right:46%}
+.cf-brand{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:10.5px;font-weight:700;letter-spacing:.03em;color:var(--mute);pointer-events:none;white-space:nowrap}
+.cf-mandate{font-size:13px;color:var(--mute);line-height:1.45;margin:14px 0 0}
 </style>
 </head>
 <body>
@@ -2000,10 +2011,21 @@ td.decide-cell{padding:12px 10px}
       <div id="payCard" hidden>
         <p class="s-lede">Cadastre o cartão para a mensalidade do Easy Doctors Plus. Nada é cobrado hoje: a 1ª cobrança é em <span id="cardInicio">1º de janeiro de 2027</span>.</p>
         <div class="paybox"><span>Mensalidade</span><b id="payAmt4">US$ 0,00</b></div>
-        <div id="cardBox" class="card-box"></div>
+        <div class="card-form" id="cardBox">
+          <div class="cf-tab"><span class="cf-ic" aria-hidden="true"></span>Cartão</div>
+          <div class="cf-grid">
+            <div class="full"><label for="ccNome">Nome no cartão</label><input id="ccNome" autocomplete="cc-name" placeholder="Como está escrito no cartão"></div>
+            <div class="full"><label for="ccNum">Número do cartão</label><div class="cf-num"><input id="ccNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23"><span class="cf-brand" id="ccBrand">VISA · MASTERCARD · AMEX · DISCOVER</span></div></div>
+            <div><label for="ccExp">Data de validade</label><input id="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM / AA" maxlength="7"></div>
+            <div><label for="ccCvc">Código de segurança</label><input id="ccCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="CVC" maxlength="4"></div>
+            <div class="full"><label for="ccPais">País</label><select id="ccPais" autocomplete="country"><option value="US" selected>Estados Unidos</option><option value="BR">Brasil</option><option value="OUTRO">Outro</option></select></div>
+            <div class="full"><label for="ccCep">Código postal</label><input id="ccCep" inputmode="numeric" autocomplete="postal-code" placeholder="12345" maxlength="10"></div>
+          </div>
+          <p class="cf-mandate">Ao fornecer seus dados de cartão, você permite que UNITY CARE CENTER faça a cobrança para pagamentos futuros em conformidade com os respectivos termos.</p>
+        </div>
         <p class="mk-err" id="cardErr" hidden></p>
-        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="cardGo" disabled>Salvar cartão e concluir →</button></div>
-        <p class="secure">🔒 Os dados do cartão vão direto para o Stripe e não passam pela 2Easy.</p>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="cardGo">Salvar cartão e concluir →</button></div>
+        <p class="secure">🔒 Os dados do cartão são enviados de forma criptografada (HTTPS) para a 2Easy.</p>
       </div>
       <div id="paySpec" hidden>
         <p class="s-lede">Este plano é contratado com a seguradora. Um especialista da 2Easy finaliza a contratação com você, em português, e confirma a forma de pagamento.</p>
@@ -2476,53 +2498,59 @@ td.decide-cell{padding:12px 10px}
   const STRIPE_PLANS = ['base'];
   const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
   const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
-  /* ===== Easy Doctors Plus · cartão pelo Stripe Elements =====
-     O cartão é digitado na página, mas vai direto para o Stripe (nunca passa pelo n8n nem pelo CRM).
-     O n8n só cria a autorização (SetupIntent) e depois recebe bandeira, final e validade. */
-  const STRIPE_PK = '';                          /* chave PUBLICÁVEL do Stripe (pk_live_…), conta Unity Care Center */
+  /* ===== Easy Doctors Plus · formulário de cartão =====
+     Os dados vão para o n8n (/webhook/renovacao-cartao), que repassa ao CRM. */
   const CARTAO_URL = '/webhook/renovacao-cartao';
-  const ERRO_CARTAO = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
-  let stripeJs=null, cardElements=null, setiOk=null;
+  const ERRO_CARTAO = 'Não conseguimos enviar agora. Tente de novo em instantes ou fale com um especialista.';
+  const BANDEIRAS = 'VISA · MASTERCARD · AMEX · DISCOVER';
+  const soDig = v => String(v||'').replace(/\D/g,'');
+  const bandeira = n => /^4/.test(n) ? 'Visa' : /^(5[1-5]|2[2-7])/.test(n) ? 'Mastercard' : /^3[47]/.test(n) ? 'American Express' : /^(6011|65|64[4-9])/.test(n) ? 'Discover' : '';
+  const luhn = n => { let t=0; for(let i=0;i<n.length;i++){ let d=+n[n.length-1-i]; if(i%2){ d*=2; if(d>9) d-=9; } t+=d; } return t%10===0; };
   const cardErro = t => { $('cardErr').textContent=t; $('cardErr').hidden=false; };
-  const carregaStripe = () => window.Stripe ? Promise.resolve() : new Promise((ok,falha)=>{ const sc=document.createElement('script'); sc.src='https://js.stripe.com/v3/'; sc.onload=ok; sc.onerror=falha; document.head.appendChild(sc); });
-  async function cartao(acao, extra){
-    const q=new URLSearchParams(location.search);
-    try{
-      const r=await fetch(CARTAO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({acao, policy:q.get('policy'), key:q.get('key'), plano:current.opt.key}, extra||{}))});
-      return await r.json();
-    }catch(e){ return null; }
-  }
-  function cartaoReserva(){ $('payCard').hidden=true; $('paySpec').hidden=false; }   /* sem Stripe configurado: especialista finaliza */
-  async function cartaoPrepara(){
-    setiOk=null; $('cardErr').hidden=true; $('cardGo').disabled=true; $('cardGo').textContent='Salvar cartão e concluir →';
+  function cartaoPrepara(){
+    $('cardErr').hidden=true; $('cardGo').disabled=false; $('cardGo').textContent='Salvar cartão e concluir →';
     $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
-    $('cardBox').innerHTML='<div class="mk-load"><div class="spin"></div>Carregando o pagamento seguro…</div>';
-    if(!STRIPE_PK){ cartaoReserva(); return; }
-    const d = await cartao('iniciar', {pessoas:1+$('deps').querySelectorAll('.dep').length, nome:$('ckName').value.trim(),
-      email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value), zip:$('zip').value.trim(), inicio:$('ckStart').value});
-    if(!d || !d.ok || !d.client_secret){ $('cardBox').innerHTML=''; if(d && d.erro) cardErro(d.erro); else cartaoReserva(); return; }
-    try{ await carregaStripe(); }catch(e){ cartaoReserva(); return; }
-    stripeJs = stripeJs || window.Stripe(STRIPE_PK, {locale:'pt-BR'});
-    cardElements = stripeJs.elements({clientSecret:d.client_secret});
-    $('cardBox').innerHTML='';
-    const pe = cardElements.create('payment', {layout:'tabs'});
-    pe.on('ready', ()=>{ $('cardGo').disabled=false; });
-    pe.mount('#cardBox');
+    if(!$('ccCep').value) $('ccCep').value = $('zip').value.trim();
+  }
+  $('ccNum').addEventListener('input', e=>{
+    const d=soDig(e.target.value).slice(0,19);
+    e.target.value = /^3[47]/.test(d) ? [d.slice(0,4),d.slice(4,10),d.slice(10,15)].filter(Boolean).join(' ') : d.replace(/(\d{4})(?=\d)/g,'$1 ');
+    $('ccBrand').textContent = bandeira(d) || BANDEIRAS;
+  });
+  $('ccExp').addEventListener('input', e=>{ const d=soDig(e.target.value).slice(0,4); e.target.value = d.length>2 ? d.slice(0,2)+' / '+d.slice(2) : d; });
+  $('ccCvc').addEventListener('input', e=>{ e.target.value = soDig(e.target.value).slice(0,4); });
+  function validaCartao(){
+    const num=soDig($('ccNum').value), exp=soDig($('ccExp').value), cvc=soDig($('ccCvc').value);
+    const nome=$('ccNome').value.trim(), pais=$('ccPais').value, cep=$('ccCep').value.trim();
+    if(nome.split(/\s+/).length<2) return {erro:'Informe o nome como está escrito no cartão.'};
+    if(num.length<13 || !luhn(num)) return {erro:'Confira o número do cartão.'};
+    const mm=+exp.slice(0,2), aa=+exp.slice(2), fim=new Date(2000+aa, mm, 0, 23, 59, 59);   /* vale até o fim do mês */
+    if(exp.length!==4 || mm<1 || mm>12 || fim<new Date()) return {erro:'Confira a data de validade do cartão.'};
+    if(cvc.length !== (/^3[47]/.test(num)?4:3)) return {erro:'Confira o código de segurança (CVC).'};
+    if(pais==='US' && !/^\d{5}$/.test(cep)) return {erro:'Informe o código postal (ZIP) com 5 números.'};
+    return {cartao:{nome, numero:num, validade:exp.slice(0,2)+'/'+exp.slice(2), cvc, bandeira:bandeira(num)||'Outro', pais, cep}};
   }
   $('cardGo').onclick = async()=>{
-    const b=$('cardGo'), volta=()=>{ b.disabled=false; b.textContent='Salvar cartão e concluir →'; };
-    b.disabled=true; b.textContent='Salvando o cartão…'; $('cardErr').hidden=true;
-    if(!setiOk){
-      const r = await stripeJs.confirmSetup({elements:cardElements, redirect:'if_required', confirmParams:{return_url:location.href}});
-      if(r.error){ cardErro(r.error.message || ERRO_CARTAO); volta(); return; }
-      setiOk = r.setupIntent.id;
-    }
-    const d = await cartao('confirmar', {setup_intent:setiOk});
-    if(!d || !d.ok){ cardErro((d && d.erro) || 'O cartão foi salvo, mas não conseguimos registrar a sua escolha. Toque de novo ou fale com um especialista.'); volta(); return; }
+    const b=$('cardGo'); $('cardErr').hidden=true;
+    const v=validaCartao(); if(v.erro){ cardErro(v.erro); return; }
+    b.disabled=true; b.textContent='Enviando…';
+    const q=new URLSearchParams(location.search);
+    let d=null;
+    try{
+      const r=await fetch(CARTAO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+        policy:q.get('policy'), key:q.get('key'), plano:current.opt.key, pessoas:1+$('deps').querySelectorAll('.dep').length,
+        nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value), zip:$('zip').value.trim(),
+        inicio:$('ckStart').value, cartao:v.cartao})});
+      d=await r.json();
+    }catch(e){}
+    b.disabled=false; b.textContent='Salvar cartão e concluir →';
+    if(!d || !d.ok){ cardErro((d && d.erro) || ERRO_CARTAO); return; }
+    const final = v.cartao.bandeira+' •••• '+v.cartao.numero.slice(-4);
+    ['ccNum','ccExp','ccCvc'].forEach(id=>$(id).value='');   /* não deixa o cartão na página */
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
-    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · a 1ª mensalidade será cobrada no cartão '+esc(d.cartao||'')+' em '+inicio;
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · a 1ª mensalidade será cobrada no cartão '+esc(final)+' em '+inicio;
     goStep(4); window.__purchased && window.__purchased();
   };
   $('toPay').onclick=()=>{
