@@ -2004,13 +2004,14 @@ td.decide-cell{padding:12px 10px}
         <div class="paybox"><span>Mensalidade prevista</span><b id="payAmt3">US$ 0,00</b></div>
         <div id="crmForms"></div>
         <p class="mk-err" id="crmErr" hidden></p>
-        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="crmGo">Continuar para o formulário →</button></div>
-        <p class="secure">🔒 Os dados bancários são digitados no formulário da 2Easy e não passam por esta página.</p>
+        <div class="step-nav"><button class="back" data-back="2">← Voltar</button><button class="btn-primary" id="crmGo">Continuar para o formulário →</button><button class="btn-primary" id="crmDone" hidden disabled>Já enviei o formulário · concluir →</button></div>
+        <p class="secure" id="crmSecure">🔒 Os dados bancários são digitados no formulário da 2Easy e não passam por esta página.</p>
       </div>
       <!-- Easy Doctors Plus · cartão (Stripe Elements: o número vai direto do navegador para o Stripe) -->
       <div id="payCard" hidden>
         <p class="s-lede">Cadastre o cartão para a mensalidade do Easy Doctors Plus. Nada é cobrado hoje: a 1ª cobrança é em <span id="cardInicio">1º de janeiro de 2027</span>.</p>
         <div class="paybox"><span>Mensalidade</span><b id="payAmt4">US$ 0,00</b></div>
+        <div id="cardHosp" hidden><p class="s-lede" style="margin-top:10px">O Easy Hospital é contratado no site da SaudeMax: a inscrição e o pagamento são feitos lá. O cartão abaixo é só do Easy Doctors Plus.</p><a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="https://enroll.saude-max.com/elizalo#estimate" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a></div>
         <div class="card-form" id="cardBox">
           <div class="cf-tab"><span class="cf-ic" aria-hidden="true"></span>Cartão</div>
           <div class="cf-grid">
@@ -2186,7 +2187,7 @@ td.decide-cell{padding:12px 10px}
     img:['AL','AZ','CA','CO','CT','DC','FL','GA','IN','ME','MD','MA','NV','NH','NJ','NY','NC','PA','RI','SC','TX','UT','VA','WA']
   };
   const ESTADO_CRM = '{{$json.estado}}'; /* 31/10 (Luiz): Contacts.State do CRM e a fonte do estado; ZIP so se o State vier vazio */
-  const estadoCliente = () => ESTADO_CRM || estadoDoZip('{{$json.zip}}') || estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim());
+  const estadoCliente = () => ESTADO_CRM || estadoDoZip(($('zip')&&$('zip').value||'').trim()) || estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim());
   const planoNoEstado = o => { const uf=estadoCliente(); return o.k.every(id=>!ESTADOS_PLANO[id] || (uf && ESTADOS_PLANO[id].includes(uf))); };
   /* preço normal (antes da promoção) — panfletos do Marketing; null = sem desconto */
   function planOld(id,ages){
@@ -2351,7 +2352,8 @@ td.decide-cell{padding:12px 10px}
   const mkSpec = ()=>'<button type="button" class="rx-spec" data-mk-spec><span class="dot" aria-hidden="true"></span>Falar com um especialista</button>';
   function mkPaint(html){
     $('mkBody').innerHTML = html;
-    $('mkBody').querySelectorAll('[data-mk-spec]').forEach(b=>b.onclick=()=>window.openSpec());
+    /* 31/10 (Luiz): se a cotacao falhar, o botao abre o formulario do especialista (manda callback_request) */
+    $('mkBody').querySelectorAll('[data-mk-spec]').forEach(b=>b.onclick=()=>openLead({nome:'plano do Marketplace', seguradora:'', premio:null, plan_id:null}));
   }
   function mkMsg(texto, spec){ mkPaint('<div class="mk-msg">'+escS(texto)+(spec?mkSpec():'')+'</div>'); }
   function cotarMarketplace(extra){
@@ -2404,7 +2406,7 @@ td.decide-cell{padding:12px 10px}
   function openLead(p){
     mk.pick = p;
     $('mkLeadPlan').textContent = p.nome; $('mkDonePlan').textContent = p.nome;
-    $('mkLeadInfo').textContent = p.seguradora+' · US$ '+fmt(p.premio_cheio ?? p.premio)+'/mês sem subsídio. Deixe seu contato e um especialista confirma o preço e a sua elegibilidade na inscrição.';
+    $('mkLeadInfo').textContent = p.seguradora ? p.seguradora+' · US$ '+fmt(p.premio_cheio ?? p.premio)+'/mês sem subsídio. Deixe seu contato e um especialista confirma o preço e a sua elegibilidade na inscrição.' : 'Deixe seu contato e um especialista da 2Easy cota os planos do Marketplace para você e confirma a sua elegibilidade.';
     $('mkErr').hidden = true; $('mkLead').classList.remove('done'); $('mkLead').classList.add('open'); document.body.classList.add('lock');
   }
   function closeLead(){ $('mkLead').classList.remove('open'); document.body.classList.remove('lock'); }
@@ -2529,7 +2531,8 @@ td.decide-cell{padding:12px 10px}
   const cardErro = t => { $('cardErr').textContent=t; $('cardErr').hidden=false; };
   function cartaoPrepara(){
     $('cardErr').hidden=true; $('cardGo').disabled=false; $('cardGo').textContent='Salvar cartão e concluir →';
-    $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01']; if(current.opt && current.opt.key === 'plus+hosp'){ setTimeout(() => { $('payAmt4').textContent = 'US$ ' + fmt(planPrice('plus', current.ages, 1)) + ' (só o Easy Doctors Plus)'; }, 0); }
+    $('cardInicio').textContent = DATAS[$('ckStart').value] || DATAS['2027-01-01']; const combo = !!(current.opt && current.opt.key === 'plus+hosp'); $('cardHosp').hidden = !combo; window.__linkClicado = false;
+    if(combo){ setTimeout(() => { const pu = crmPlans().find(p=>p.insurance_type==='Unity Care Center'); $('payAmt4').textContent = 'US$ ' + fmt(pu ? pu.monthly_premium : planPrice('plus', current.ages, 1)) + ' (só o Easy Doctors Plus)'; }, 0); } /* 31/10 (Luiz): mesmo monthly_premium do Unity enviado no checkout_started */
   }
   $('ccNum').addEventListener('input', e=>{
     const d=soDig(e.target.value).slice(0,19);
@@ -2568,9 +2571,9 @@ td.decide-cell{padding:12px 10px}
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
-    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a><br><button type="button" class="btn-primary" id="comboOk" style="display:inline-block;margin-top:10px">Já fiz a inscrição do Easy Hospital · concluir →</button><p class="mk-err" id="comboMsg" hidden></p>';
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a><br><button type="button" class="btn-primary" id="comboOk" style="display:inline-block;margin-top:10px" disabled>Já fiz a inscrição do Easy Hospital · concluir →</button><p class="mk-err" id="comboMsg" hidden></p>';
       /* 31/10 (Luiz): no combo, o checkout_completed so sai depois do cartao do Plus gravado E de o cliente confirmar a inscricao na SaudeMax (um unico envio) */
-      const cb=$('comboOk'); cb.onclick=async()=>{ if(cb.disabled) return; cb.disabled=true; cb.textContent='Conferindo…'; $('comboMsg').hidden=true; const c=await portal('checkout_completed'); if(c && c.ok){ cb.textContent='✓ Inscrição concluída'; } else { cb.disabled=false; cb.textContent='Já fiz a inscrição do Easy Hospital · concluir →'; $('comboMsg').textContent='Ainda não recebemos a sua inscrição do Easy Hospital. Termine a inscrição no site da SaudeMax e toque de novo.'; $('comboMsg').hidden=false; } }; }
+      const cb=$('comboOk'); if(window.__linkClicado) liberaConcluir(); cb.onclick=async()=>{ if(cb.disabled) return; cb.disabled=true; cb.textContent='Conferindo…'; $('comboMsg').hidden=true; const c=await portal('checkout_completed'); if(c && c.ok){ cb.textContent='✓ Inscrição concluída'; } else { cb.disabled=false; cb.textContent='Já fiz a inscrição do Easy Hospital · concluir →'; $('comboMsg').textContent='Ainda não recebemos a sua inscrição do Easy Hospital. Termine a inscrição no site da SaudeMax e toque de novo.'; $('comboMsg').hidden=false; } }; }
     goStep(4); window.__purchased && window.__purchased();
   };
   $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}}); }catch(e){}
@@ -2718,7 +2721,11 @@ td.decide-cell{padding:12px 10px}
   }
   window.__portal = portal;
   let crmEstado='inicio';
-  function crmReset(){ crmEstado='inicio'; $('crmForms').innerHTML=''; $('crmErr').hidden=true; $('crmGo').disabled=false; $('crmGo').textContent='Continuar para o formulário →'; }
+  function crmReset(){ crmEstado='inicio'; $('crmForms').innerHTML=''; $('crmErr').hidden=true; $('crmGo').disabled=false; $('crmGo').hidden=false; $('crmGo').textContent='Continuar para o formulário →'; $('crmDone').hidden=true; $('crmDone').disabled=true; }
+  /* 31/10 (Luiz): o botao de concluir so habilita depois que o cliente clicou no link do formulario/afiliada e 2 s depois */
+  const SECURE_CRM = '🔒 Os dados bancários são digitados no formulário da 2Easy e não passam por esta página.';
+  function liberaConcluir(){ setTimeout(()=>{ ['crmDone','comboOk'].forEach(id=>{ const x=$(id); if(x && !x.hidden && !window.__crmEnviando) x.disabled=false; }); }, 2000); }
+  ['click','auxclick'].forEach(ev=>document.addEventListener(ev, e=>{ const a=e.target && e.target.closest && e.target.closest('#crmForms a, #cardHosp a, #doneCharge a'); if(a){ window.__linkClicado=true; liberaConcluir(); } }, true));
   function crmPrepara(){
     crmReset();
     const cfg=formCfg();
@@ -2726,6 +2733,7 @@ td.decide-cell{padding:12px 10px}
       ? 'Para concluir, faça a inscrição do Easy Hospital no site da SaudeMax, pelo botão que vai aparecer. Depois volte aqui e toque em concluir.'
       : 'Para concluir, preencha o formulário seguro da 2Easy. O pagamento é por conta bancária, informada no próprio formulário. Nada é cobrado hoje.' + (cfg.link ? ' Para o Easy Hospital, faça também a inscrição na SaudeMax pelo botão que vai aparecer.' : '');
     if(current.opt && current.opt.key==='hosp') $('crmGo').textContent='Continuar para a inscrição →';
+    $('crmSecure').textContent = current.opt && current.opt.key==='hosp' ? '🔒 A inscrição e o pagamento são feitos no site da SaudeMax.' : SECURE_CRM;
   }
   const crmErro = t => { $('crmErr').textContent=t; $('crmErr').hidden=false; };
   function crmLinks(policies){
@@ -2754,20 +2762,29 @@ td.decide-cell{padding:12px 10px}
     const b=$('crmGo'); $('crmErr').hidden=true;
     if(crmEstado === 'reserva'){ crmErro('Um especialista da 2Easy vai finalizar a contratação com você pelo WhatsApp (botão acima). Sua escolha ainda não foi registrada no sistema.'); return; }
     if(b.disabled || window.__crmEnviando) return; /* 31/10 (Luiz): um envio por clique, sem repetir enquanto o 1o nao responde */
-    window.__crmEnviando=true; b.disabled=true; b.textContent = crmEstado==='inicio' ? 'Preparando o formulário…' : 'Conferindo…';
+    window.__crmEnviando=true; b.disabled=true; b.textContent='Preparando…';
     let d=null;
     try{
-      if(crmEstado==='inicio' && window.__ckResp){ d = await window.__ckResp; } /* reaproveita o checkout_started de quando a etapa de pagamento abriu */
+      if(window.__ckResp){ d = await window.__ckResp; } /* aguarda o checkout_started de quando a etapa de pagamento abriu; so reenvia se ele voltar com ok=false */
       if(!d || !d.ok) d = await portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}});
     } finally { window.__crmEnviando=false; b.disabled=false; }
     if(d && d.error==='fortress_only_texas'){ crmErro('Este plano só está disponível no Texas. Fale com um especialista.'); b.textContent='Continuar para o formulário →'; return; }
     if(!d || !d.ok){ crmReserva(); return; }
+    window.__ckResp = Promise.resolve(d);
     crmLinks(d.policies);
-    b.textContent = (d.policies||[]).every(p=>p.payment_mode==='saudemax') ? 'Já fiz a inscrição · concluir →' : 'Já enviei o formulário · concluir →';
-    if(crmEstado==='inicio'){ crmEstado='formulario'; return; }
-    if((d.policies||[]).some(p=>p.payment_mode!=='saudemax' && !p.form_done)){ crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.'); return; }
-    const c = await portal('checkout_completed');
-    if(c && c.ok) crmConcluido(); else crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.');
+    crmEstado='formulario'; b.hidden=true;
+    const done=$('crmDone');
+    done.textContent = (d.policies||[]).every(p=>p.payment_mode==='saudemax') ? 'Já fiz a inscrição · concluir →' : 'Já enviei o formulário · concluir →';
+    done.hidden=false; done.disabled=true;
+  };
+  /* 31/10 (Luiz): botao separado so para concluir (checkout_completed), habilitado depois do clique no link + 2 s */
+  $('crmDone').onclick = async()=>{
+    const b=$('crmDone'); if(b.disabled || window.__crmEnviando) return;
+    window.__crmEnviando=true; b.disabled=true; const t=b.textContent; b.textContent='Conferindo…'; $('crmErr').hidden=true;
+    let c=null; try{ c = await portal('checkout_completed'); } finally { window.__crmEnviando=false; }
+    if(c && c.ok){ crmConcluido(); return; }
+    b.disabled=false; b.textContent=t;
+    crmErro(current.opt && current.opt.key==='hosp' ? 'Ainda não recebemos a sua inscrição do Easy Hospital. Termine a inscrição no site da SaudeMax e toque de novo.' : 'Ainda não recebemos o formulário. Envie e toque de novo em concluir.');
   };
   /* volta do Stripe: ?pagamento=ok abre a confirmação */
   setTimeout(()=>{
