@@ -2469,6 +2469,8 @@ td.decide-cell{padding:12px 10px}
     const parts = ehBase ? [{name:PLANS.base.name, price:basePreco().valor}] : current.opt.k.map(id=>{ const a=ages.length?ages:current.ages, price=planPrice(id,a,zipF), old=planOld(id,a); return {name:PLANS[id].name, price, old:(old&&old>price)?old:null}; });
     const tot = +parts.reduce((t,x)=>t+x.price,0).toFixed(2);
     current.exact=tot;
+    /* Selection Stopped (31/10): cliente terminou "Seus dados" -> avisa o CRM (1 vez por plano na sessao) */
+    try{ window.__selEnv = window.__selEnv || {}; if(window.__portal && !window.__selEnv[current.opt.key]){ window.__selEnv[current.opt.key] = 1; window.__portal('selection_started', {plans: crmPlans()}); } }catch(e){}
     setTimeout(()=>{
       $('qLoading').style.display='none'; $('qReady').style.display='block';
       $('qPlan').textContent = current.opt.name + ' · ' + fam;
