@@ -1420,12 +1420,12 @@ td.decide-cell{padding:12px 10px}
               <b>{{$json.nome_completo}}</b>
             </div>
             <div class="pf-card-row">
-              <div><small>Nº da apólice</small><b class="mono">FL-2026-48213 teste</b></div>
+              <div><small>Nº da apólice</small><b class="mono">{{$json.id_apolice}}</b></div>
               <div><small>Plano</small><b>{{$json.plano}}</b></div>
             </div>
             <div class="pf-card-row">
-              <div><small>Vigência</small><b class="mono">{{$json.apolice_inicio}} – {{$json.apolice_fim}}</b></div>
-              <div><small>Cobertura</small><b>{{$json.individual}} · {{ $json.pessoas.length }}</b></div>
+              <div><small>Vigência</small><b class="mono">{{$json.vigencia}}</b></div>
+              <div><small>Cobertura</small><b>{{$json.individual}} · {{ $json.pessoas.length === 1 ? '1 pessoa' : $json.pessoas.length + ' pessoas' }}</b></div>
             </div>
             <div class="pf-card-pay">
               <span>Você paga hoje<small>com subsídio de US$ {{ ((Number($json.valor_apolice) - Number($json.premium))).toLocaleString('pt-BR',{maximumFractionDigits:0}) }}</small></span>
@@ -1485,7 +1485,7 @@ td.decide-cell{padding:12px 10px}
           <div class="m-chips">
             <span><i>✓</i>Identidade verificada</span>
             <span><i>✓</i>Conexão criptografada</span>
-            <span><i>✓</i>Agência licenciada na FL</span>
+            <span><i>✓</i>{{$json.agencia_txt}}</span>
           </div>
         </div>
       </div>
@@ -1494,9 +1494,9 @@ td.decide-cell{padding:12px 10px}
         <div class="pf-box">
           <div class="pf-box-k">Segurança da sua conta</div>
           <ul class="pf-trust">
-            <li><i>✓</i><span><b>Identidade verificada</b><small>Telefone com final (···{{ String($json.telefone).slice(-4) }})</small></span></li>
+            <li><i>✓</i><span><b>Identidade verificada</b><small>Telefone com final (···{{$json.telefone_final}})</small></span></li>
             <li><i>✓</i><span><b>Conexão criptografada</b><small>Seus dados não são compartilhados</small></span></li>
-            <li><i>✓</i><span><b>Agência licenciada na Flórida</b></span></li>
+            <li><i>✓</i><span><b>{{$json.agencia_txt}}</b></span></li>
           </ul>
         </div>
 
@@ -2050,7 +2050,14 @@ td.decide-cell{padding:12px 10px}
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 (function(){
-  const OLD = {{ Number($json.valor_apolice) }};
+  /* 31/10 (Luiz): nenhum NaN/null/"–" na pagina - o n8n marca campo vazio com um marcador e aqui a linha some */
+  (function(){ const M='__'+'VAZIO__', BL='li, .pf-card-row > div, .pf-fut-math > div, .pf-card-pay, .pf-fut-pay, .pf-dn, .pf-dline, .was, .amount, .o-bar, p, small, h2, b';
+    const tw=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); const hits=[]; while(tw.nextNode()){ if(tw.currentNode.nodeValue.indexOf(M)>=0) hits.push(tw.currentNode); }
+    hits.forEach(t=>{ if(t.parentElement && /^(SCRIPT|STYLE)$/.test(t.parentElement.tagName)) return; const el=t.parentElement && t.parentElement.closest(BL); t.nodeValue=t.nodeValue.split(M).join(''); if(el) el.style.display='none'; });
+    document.querySelectorAll('input').forEach(i=>{ if(String(i.value).indexOf(M)>=0) i.value=''; });
+    document.querySelectorAll('[aria-label]').forEach(e=>{ if(e.getAttribute('aria-label').indexOf(M)>=0) e.removeAttribute('aria-label'); });
+  })();
+  const OLD = Number('{{ $json.valor_apolice ?? "" }}') || 0;
   const CONC = {{ $json.mostrar_concierge }}; /* Concierge só para quem tem Obamacare hoje */
   document.querySelectorAll(CONC ? '.sem-concierge' : '.so-concierge').forEach(el => el.remove());
   /* ===== Motor de previsão 2Easy · base: Matriz de Coberturas (atualização 11 set. 2026) =====
@@ -2178,7 +2185,8 @@ td.decide-cell{padding:12px 10px}
     st:['IN','FL','CA','UT','OH','MD','TX','SC','CT','GA','VA','AZ','NC','PA','NJ','CO','MI'],
     img:['AL','AZ','CA','CO','CT','DC','FL','GA','IN','ME','MD','MA','NV','NH','NJ','NY','NC','PA','RI','SC','TX','UT','VA','WA']
   };
-  const estadoCliente = () => estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim()) || estadoDoZip('{{$json.zip}}');
+  const ESTADO_CRM = '{{$json.estado}}'; /* 31/10 (Luiz): Contacts.State do CRM e a fonte do estado; ZIP so se o State vier vazio */
+  const estadoCliente = () => ESTADO_CRM || estadoDoZip('{{$json.zip}}') || estadoDoZip(($('mkZip')&&$('mkZip').value||'').trim());
   const planoNoEstado = o => { const uf=estadoCliente(); return o.k.every(id=>!ESTADOS_PLANO[id] || (uf && ESTADOS_PLANO[id].includes(uf))); };
   /* preço normal (antes da promoção) — panfletos do Marketing; null = sem desconto */
   function planOld(id,ages){
@@ -2269,7 +2277,7 @@ td.decide-cell{padding:12px 10px}
           <div class="o-money">
             <div class="o-price"><small>${r.from?'Previsão · a partir de':'Previsão 2027'}</small>${r.old?`<s>US$ ${fmt(r.old)}/mês</s>`:''}<b>US$ ${fmt(r.price)}</b><em>/mês</em>${r.old?`<span class="o-promo">Promoção</span>`:''}</div>
             <div class="o-vs">
-              <div class="o-bar"><span class="o-bl"><span class="lg">Mesmo plano<br>em 2027</span><span class="sm">Atual</span></span><span class="o-tr"><i class="old" style="width:100%"></i></span><span class="o-v">US$ {{ (Number($json.valor_apolice)).toLocaleString('pt-BR',{maximumFractionDigits:0}) }}</span></div>
+              ${OLD ? `<div class="o-bar"><span class="o-bl"><span class="lg">Mesmo plano<br>em 2027</span><span class="sm">Atual</span></span><span class="o-tr"><i class="old" style="width:100%"></i></span><span class="o-v">US$ ${OLD.toLocaleString('pt-BR',{maximumFractionDigits:0})}</span></div>` : ''}
               <div class="o-bar"><span class="o-bl"><span class="lg">Este plano</span><span class="sm">Novo</span></span><span class="o-tr"><i class="new" style="width:${w.toFixed(1)}%"></i></span><span class="o-v">US$ ${fmt0(r.price)}</span></div>
             </div>
             ${save>0?`<div class="o-save"><b>US$ ${fmt0(save)} a menos por mês</b><span>US$ ${fmt0(save*12)} de economia em 2027</span></div>`:''}
@@ -2560,10 +2568,12 @@ td.decide-cell{padding:12px 10px}
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
-    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a>'; }
+    $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a><br><button type="button" class="btn-primary" id="comboOk" style="display:inline-block;margin-top:10px">Já fiz a inscrição do Easy Hospital · concluir →</button><p class="mk-err" id="comboMsg" hidden></p>';
+      /* 31/10 (Luiz): no combo, o checkout_completed so sai depois do cartao do Plus gravado E de o cliente confirmar a inscricao na SaudeMax (um unico envio) */
+      const cb=$('comboOk'); cb.onclick=async()=>{ if(cb.disabled) return; cb.disabled=true; cb.textContent='Conferindo…'; $('comboMsg').hidden=true; const c=await portal('checkout_completed'); if(c && c.ok){ cb.textContent='✓ Inscrição concluída'; } else { cb.disabled=false; cb.textContent='Já fiz a inscrição do Easy Hospital · concluir →'; $('comboMsg').textContent='Ainda não recebemos a sua inscrição do Easy Hospital. Termine a inscrição no site da SaudeMax e toque de novo.'; $('comboMsg').hidden=false; } }; }
     goStep(4); window.__purchased && window.__purchased();
   };
-  $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans()}); }catch(e){}
+  $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}}); }catch(e){}
     const viaStripe = formModo()==='stripe', viaCartao = formModo()==='cartao';
     $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe || viaCartao; $('payCard').hidden = !viaCartao;
     $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = $('payAmt4').textContent = 'US$ '+fmt(current.exact);
@@ -2712,14 +2722,17 @@ td.decide-cell{padding:12px 10px}
   function crmPrepara(){
     crmReset();
     const cfg=formCfg();
-    $('crmLede').textContent = 'Para concluir, preencha o formulário seguro da 2Easy. O pagamento é por conta bancária, informada no próprio formulário. Nada é cobrado hoje.'
-      + (cfg.link ? ' Para o Easy Hospital, faça também a inscrição na SaudeMax pelo botão que vai aparecer.' : '');
+    $('crmLede').textContent = current.opt && current.opt.key==='hosp'
+      ? 'Para concluir, faça a inscrição do Easy Hospital no site da SaudeMax, pelo botão que vai aparecer. Depois volte aqui e toque em concluir.'
+      : 'Para concluir, preencha o formulário seguro da 2Easy. O pagamento é por conta bancária, informada no próprio formulário. Nada é cobrado hoje.' + (cfg.link ? ' Para o Easy Hospital, faça também a inscrição na SaudeMax pelo botão que vai aparecer.' : '');
+    if(current.opt && current.opt.key==='hosp') $('crmGo').textContent='Continuar para a inscrição →';
   }
   const crmErro = t => { $('crmErr').textContent=t; $('crmErr').hidden=false; };
   function crmLinks(policies){
     const cfg=formCfg();
-    const btns=(policies||[]).filter(p=>p.form_url).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Short Term':'Short Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
-    if(cfg.link) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
+    const sm=(policies||[]).some(p=>p.payment_mode==='saudemax');
+    const btns=(policies||[]).filter(p=>p.form_url && (p.payment_mode ? p.payment_mode==='form' : p.insurance_type!=='SaudeMax')).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Short Term':'Short Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
+    if(cfg.link || sm) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link||SAUDEMAX_URL)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
     $('crmForms').innerHTML = btns.join('');
   }
   function crmReserva(){
@@ -2740,14 +2753,19 @@ td.decide-cell{padding:12px 10px}
   $('crmGo').onclick = async()=>{
     const b=$('crmGo'); $('crmErr').hidden=true;
     if(crmEstado === 'reserva'){ crmErro('Um especialista da 2Easy vai finalizar a contratação com você pelo WhatsApp (botão acima). Sua escolha ainda não foi registrada no sistema.'); return; }
-    b.disabled=true; b.textContent = crmEstado==='inicio' ? 'Preparando o formulário…' : 'Conferindo…';
-    const d = await portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}});
-    b.disabled=false;
+    if(b.disabled || window.__crmEnviando) return; /* 31/10 (Luiz): um envio por clique, sem repetir enquanto o 1o nao responde */
+    window.__crmEnviando=true; b.disabled=true; b.textContent = crmEstado==='inicio' ? 'Preparando o formulário…' : 'Conferindo…';
+    let d=null;
+    try{
+      if(crmEstado==='inicio' && window.__ckResp){ d = await window.__ckResp; } /* reaproveita o checkout_started de quando a etapa de pagamento abriu */
+      if(!d || !d.ok) d = await portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}});
+    } finally { window.__crmEnviando=false; b.disabled=false; }
+    if(d && d.error==='fortress_only_texas'){ crmErro('Este plano só está disponível no Texas. Fale com um especialista.'); b.textContent='Continuar para o formulário →'; return; }
     if(!d || !d.ok){ crmReserva(); return; }
     crmLinks(d.policies);
-    b.textContent='Já enviei o formulário · concluir →';
+    b.textContent = (d.policies||[]).every(p=>p.payment_mode==='saudemax') ? 'Já fiz a inscrição · concluir →' : 'Já enviei o formulário · concluir →';
     if(crmEstado==='inicio'){ crmEstado='formulario'; return; }
-    if((d.policies||[]).some(p=>!p.form_done)){ crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.'); return; }
+    if((d.policies||[]).some(p=>p.payment_mode!=='saudemax' && !p.form_done)){ crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.'); return; }
     const c = await portal('checkout_completed');
     if(c && c.ok) crmConcluido(); else crmErro('Ainda não recebemos o formulário. Envie e toque de novo em concluir.');
   };
