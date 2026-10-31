@@ -1625,7 +1625,7 @@ td.decide-cell{padding:12px 10px}
         <h2 id="faq-t">Antes de renovar, tire suas dúvidas.</h2>
         <p>Estas são as perguntas que nossos clientes mais fazem antes de trocar de plano. Se a sua não estiver aqui, fale com a gente em português.</p>
         <button class="btn-primary" data-goplans>Ver os planos e garantir meu preço →</button>
-        <a class="tel" href="tel:+14075550100">Prefiro falar com uma pessoa</a>
+        <a class="tel" href="tel:+18888862210">Prefiro falar com uma pessoa</a>
       </div>
       <div class="faq-list">
 
@@ -2016,6 +2016,7 @@ td.decide-cell{padding:12px 10px}
           <div class="cf-grid">
             <div class="full"><label for="ccNome">Nome no cartão</label><input id="ccNome" autocomplete="cc-name" placeholder="Como está escrito no cartão"></div>
             <div class="full"><label for="ccNum">Número do cartão</label><div class="cf-num"><input id="ccNum" inputmode="numeric" autocomplete="cc-number" placeholder="1234 1234 1234 1234" maxlength="23"><span class="cf-brand" id="ccBrand">VISA · MASTERCARD · AMEX · DISCOVER</span></div></div>
+            <div class="full"><label for="ccExp">Validade (MM/AA)</label><input id="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/AA" maxlength="5"></div>
           </div>
           <p class="cf-mandate">Ao fornecer seus dados de cartão, você permite que UNITY CARE CENTER faça a cobrança para pagamentos futuros em conformidade com os respectivos termos. Um agente da 2Easy vai entrar em contato para completar os dados do cartão.</p>
         </div>
@@ -2408,7 +2409,8 @@ td.decide-cell{padding:12px 10px}
     const body={cotacao_id:mk.cotacao_id, plan_id:mk.pick.plan_id, name, contact_consent:true, contact_method:$('mkMethod').value};
     if(phone) body.phone_number=phone;
     if(email) body.email=email;
-    const c = window.__portal ? await window.__portal('callback_request', {contact_method: $('mkMethod').value, message: 'Portal 2027: pediu especialista (Marketplace sem subsídio). ' + name + (phone ? ' · ' + phone : '') + (email ? ' · ' + email : '')}) : null; try{ await drako('lead-saude', body); }catch(e){} const d = (c && c.ok) ? {ok:true} : {ok:false, erro:'Não conseguimos registrar seu pedido agora. Tente de novo em instantes.'};
+    const METODO = {whatsapp:'WhatsApp', phone:'Phone', email:'Email'}, PREF = {whatsapp:'WhatsApp', phone:'Ligação', email:'E-mail'}, met = $('mkMethod').value; /* 31/10: formato pedido pelo Luiz */
+    const c = window.__portal ? await window.__portal('callback_request', {contact_method: METODO[met] || 'WhatsApp', message: 'Telefone: ' + (phone || '-') + ' | E-mail: ' + (email || '-') + ' | Preferência: ' + (PREF[met] || met) + ' | Portal 2027: ' + name + ' pediu um especialista sobre o plano do Marketplace sem subsídio' + (mk.pick && mk.pick.nome ? ' (' + mk.pick.nome + ')' : '') + '. Autorizou o contato.'}) : null; try{ await drako('lead-saude', body); }catch(e){} const d = (c && c.ok) ? {ok:true} : {ok:false, erro:'Não conseguimos registrar seu pedido agora. Tente de novo em instantes.'};
     b.disabled=false; b.textContent='Enviar para um especialista →';
     if(d.ok) $('mkLead').classList.add('done'); else mkErr(d.erro || ERRO_REDE);
   };
@@ -2469,6 +2471,8 @@ td.decide-cell{padding:12px 10px}
     const parts = ehBase ? [{name:PLANS.base.name, price:basePreco().valor}] : current.opt.k.map(id=>{ const a=ages.length?ages:current.ages, price=planPrice(id,a,zipF), old=planOld(id,a); return {name:PLANS[id].name, price, old:(old&&old>price)?old:null}; });
     const tot = +parts.reduce((t,x)=>t+x.price,0).toFixed(2);
     current.exact=tot;
+    /* valor exato por plano (31/10, ajuste do Luiz): o CRM recebe o mesmo valor da etapa "Seu valor exato" */
+    current.exactById = {}; if(ehBase){ current.exactById.base = basePreco().valor; } else { current.opt.k.forEach(id=>{ const a=ages.length?ages:current.ages; current.exactById[id]=planPrice(id,a,zipF); }); }
     /* Selection Stopped (31/10): cliente terminou "Seus dados" -> avisa o CRM (1 vez por plano na sessao) */
     try{ window.__selEnv = window.__selEnv || {}; if(window.__portal && !window.__selEnv[current.opt.key]){ window.__selEnv[current.opt.key] = 1; window.__portal('selection_started', {plans: crmPlans()}); } }catch(e){}
     setTimeout(()=>{
@@ -2524,36 +2528,42 @@ td.decide-cell{padding:12px 10px}
     e.target.value = /^3[47]/.test(d) ? [d.slice(0,4),d.slice(4,10),d.slice(10,15)].filter(Boolean).join(' ') : d.replace(/(\d{4})(?=\d)/g,'$1 ');
     $('ccBrand').textContent = bandeira(d) || BANDEIRAS;
   });
+  $('ccExp').addEventListener('input', e=>{ const d=soDig(e.target.value).slice(0,4); e.target.value = d.length>2 ? d.slice(0,2)+'/'+d.slice(2) : d; });
   function validaCartao(){
     const num=soDig($('ccNum').value), nome=$('ccNome').value.trim();
     if(nome.split(/\s+/).length<2) return {erro:'Informe o nome como está escrito no cartão.'};
     if(num.length<13 || !luhn(num)) return {erro:'Confira o número do cartão.'};
-    return {cartao:{nome, numero:num, bandeira:bandeira(num)||'Outro'}};   /* validade e CVC: um agente completa com o cliente */
+    const exp=soDig($('ccExp').value), mm=+exp.slice(0,2), aa=+exp.slice(2,4), hoje=new Date(), fimMes=new Date(2000+aa, mm, 1);
+    if(exp.length!==4 || mm<1 || mm>12 || fimMes<=new Date(hoje.getFullYear(), hoje.getMonth(), 1)) return {erro:'Confira a validade do cartão (MM/AA).'};
+    return {cartao:{nome, numero:num, bandeira:bandeira(num)||'Outro', validade:exp.slice(0,2)+'/'+exp.slice(2)}};   /* CVC: nunca é pedido nem enviado */
   }
   $('cardGo').onclick = async()=>{
     const b=$('cardGo'); $('cardErr').hidden=true;
     const v=validaCartao(); if(v.erro){ cardErro(v.erro); return; }
     b.disabled=true; b.textContent='Enviando…';
     const q=new URLSearchParams(location.search);
-    let d=null;
+    let d=null, ck=null;
+    /* 31/10 (Luiz): o cartão vai para a apólice Unity que o checkout_started criou (não cria apólice nova) */
+    try{ ck = await window.__ckResp; if(!ck || !ck.ok) ck = await window.__portal('checkout_started', {plans: crmPlans()}); }catch(e){}
+    const pu = ((ck && ck.policies) || []).find(p=>p.insurance_type==='Unity Care Center');
     try{
       const r=await fetch(CARTAO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         policy:q.get('policy'), key:q.get('key'), plano:(current.opt.key === 'plus+hosp' ? 'plus' : current.opt.key), combo_hospital:(current.opt.key === 'plus+hosp'), pessoas:1+$('deps').querySelectorAll('.dep').length,
         nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value), zip:$('zip').value.trim(),
-        inicio:$('ckStart').value, cartao:v.cartao})});
+        inicio:$('ckStart').value, policy_unity:(pu ? String(pu.policy_id) : ''), cartao:v.cartao})});
       d=await r.json();
     }catch(e){}
     b.disabled=false; b.textContent='Salvar cartão e concluir →';
     if(!d || !d.ok){ cardErro((d && d.erro) || ERRO_CARTAO); return; }
     const final = v.cartao.bandeira+' •••• '+v.cartao.numero.slice(-4);
-    $('ccNum').value='';   /* não deixa o número na página */
+    $('ccNum').value=''; $('ccExp').value='';   /* não deixa o número na página */
     const inicio = DATAS[$('ckStart').value] || DATAS['2027-01-01'];
     $('doneName').textContent = current.opt.name;
     $('doneStart').textContent = inicio;
     $('doneCharge').innerHTML = '<b>Nada foi cobrado hoje</b> · cartão '+esc(final)+' recebido; um agente da 2Easy vai falar com você para completar os dados. A 1ª mensalidade é em '+inicio; if(formCfg().link){ $('doneCharge').innerHTML += '<br><br><b>Falta 1 passo para o Easy Hospital:</b> o cartão acima é só do Easy Doctors Plus. Para assinar o Easy Hospital, continue e faça a inscrição no site do Easy Hospital.<br><a class="btn-primary" style="display:inline-block;margin-top:12px" href="' + esc(formCfg().link) + '" target="_blank" rel="noopener">Continuar para a inscrição do Easy Hospital →</a>'; }
     goStep(4); window.__purchased && window.__purchased();
   };
-  $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__portal('checkout_started', {plans: crmPlans()}); }catch(e){}
+  $('toPay').onclick=()=>{ /* In Checkout: avisa o CRM assim que a etapa de pagamento abre */ try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans()}); }catch(e){}
     const viaStripe = formModo()==='stripe', viaCartao = formModo()==='cartao';
     $('payStripe').hidden = !viaStripe; $('paySpec').hidden = true; $('payCrm').hidden = viaStripe || viaCartao; $('payCard').hidden = !viaCartao;
     $('payAmt').textContent = $('payAmt2').textContent = $('payAmt3').textContent = $('payAmt4').textContent = 'US$ '+fmt(current.exact);
@@ -2680,10 +2690,11 @@ td.decide-cell{padding:12px 10px}
     const insured=['Owner'].concat(Array.from({length:n-1},(_,i)=>'Dep '+(i+1)));
     const start=$('ckStart').value||'2027-01-01';
     return current.opt.k.map(id=>{
-      const it={insurance_type:INSURANCE[id], plan_name:PLANS[id].name+(n>1?' Família':' Individual'), monthly_premium:+planPrice(id,current.ages,1).toFixed(2), start_date:start, insured};
+      const it={insurance_type:INSURANCE[id], plan_name:PLANS[id].name+(n>1?' Família':' Individual'), monthly_premium:+((current.exactById && current.exactById[id]!=null) ? current.exactById[id] : planPrice(id,current.ages,1)).toFixed(2), start_date:start, insured};
       if(cfg.dur){ it.duration=$('ckDur').value; it.end_date=somaMeses(start, DUR_MESES[it.duration]||1); }
       if(cfg.viagem){ it.start_date=$('ckIda').value; it.end_date=$('ckVolta').value; it.duration='Per Trip (days)'; }
       if(id === 'base'){ const bp = basePreco(); it.plan_name = 'EasyDoctors Base - ' + bp.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace('Plano Familia', 'Familia'); /* igual ao nome que o v2 manda */ it.monthly_premium = bp.valor; it.insured = ['Owner']; } /* Base: plano e valor pela quantidade (BASE_PRECOS); so o titular */ if(id==='st') it.carrier=''; /* seguradora do Short Term: a definir com a Rose */
+      if(!it.duration && ['EasyDoctors','Unity Care Center','SaudeMax'].includes(it.insurance_type)) it.duration='Lifetime'; /* 31/10: pedido do Luiz */
       return it;
     });
   }
