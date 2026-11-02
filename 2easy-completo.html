@@ -2069,6 +2069,8 @@ td.decide-cell{padding:12px 10px}
     plus:  {name:'Easy Doctors Plus', ind:69.90, mode:'table', table:{1:69.90,2:132.90,3:187.90,4:236.90,5:236.90,6:296.90}, extra:69.90, old:{2:139.80,3:209.70,4:279.60,5:279.60,6:417.60}, maxAge:null},
     base:  {name:'Easy Doctors Base', ind:29.90, fam:49.90, mode:'flatFam', maxAge:null},
     hosp:  {name:'Easy Hospital Plus', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, extra:80, maxAge:64},
+    /* Easy Hospital comum (sem o pacote preventivo): só no combo com o Easy Doctors Plus. Preço igual ao do Plus até a 2Easy confirmar */
+    hospc: {name:'Easy Hospital', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, extra:80, maxAge:64},
     img:   {name:'IMG Plano Emergencial', ind:100, fam3:270, mode:'age', maxAge:null, from:true},
     presidio:{name:'FortressPlan', ind:216, fam3:674, mode:'age', maxAge:64, from:true},
     st:    {name:'Short Term Plan', ind:280, fam3:740, mode:'age', maxAge:64, from:true}
@@ -2093,9 +2095,9 @@ td.decide-cell{padding:12px 10px}
      f:{pcp:1,pedi:1,conc:1,esp:1,mental:1,arx:1,tele:1}, cost:'<ul class="rx-trust" aria-label="Como funciona"> <li><b>Sem Carência</b></li> <li><b>Clínico Geral ILIMITADO</b></li> <li><b>Encaminhamento médico, renovação de receita e muito mais</b></li> <li><b>Atendimento Emergêncial 24h</b></li> <li><b>Atendimento 100% em português</b></li></ul>'},
     {key:'plus', k:['plus'], tag:'Consultas sem custo extra', line:'Clínico geral, check-up e pediatria sem dedutível e sem copay.',
      f:{pcp:1,pedi:1,conc:1,chk:1,arx:1,tele:1}, cost:''},
-    {key:'plus+hosp', k:['plus','hosp'], tag:'Proteção completa', line:'Consultas sem custo extra mais internação, emergência e parto.',
+    {key:'plus+hosp', k:['plus','hospc'], tag:'Proteção completa', line:'Consultas sem custo extra mais internação, emergência e parto.',
      ocultar:['20% de desconto em procedimentos como:','Atendimento pediátrico'],
-     f:{pcp:1,hosp:1,ihosp:1,gest:1,chk:1,conc:1,tele:1,arx:1}, cost:'Limites do pacote preventivo (regras do contrato)'},
+     f:{pcp:1,hosp:1,ihosp:1,gest:1,chk:1,conc:1,tele:1,arx:1}, cost:'Consultas sem copay · hospital com dedutível'},
     {key:'hosp', k:['hosp'], tag:'Foco em hospital', line:'Plano hospitalar com internação ilimitada**: internação e emergência, gestação e parto.',
      f:{hosp:1,gest:1,tele:1}, cost:'Com dedutível · sem copay'},
     {key:'presidio', k:['presidio'], tag:'Hospital ilimitado', line:'Hospital ilimitado, clínico, especialistas e remédios.',
@@ -2140,6 +2142,8 @@ td.decide-cell{padding:12px 10px}
          ['Remédios e exames',[['y','Remédios com receita','Incluídos.']]],
          ['Como você paga',[['i','Plano de curto prazo','Tem duração limitada. Confirme o período na apólice.'],['i','Até 64 anos','Disponível para pessoas de até 64 anos.']]]]}
   };
+  /* Easy Hospital comum = mesmos detalhes do Easy Hospital Plus, sem o pacote preventivo */
+  DET.hospc = {who:'Para quem quer proteção contra contas de hospital e parto.', g: DET.hosp.g.filter(([g]) => g !== 'Pacote preventivo')};
   if(!CONC) DET.plus.g = DET.plus.g.filter(([g]) => g !== 'Extras 2Easy');
   function detailsOf(r){
     const order=['Consultas e médicos','Hospital e emergência','Demais benefícios','Remédios e exames','Como você paga','Extras 2Easy'];
@@ -2314,7 +2318,7 @@ td.decide-cell{padding:12px 10px}
   }
 
   function renderPick(){
-    const o=current.opt, price=o.price; current.price=price; current.hosp=o.k.includes('hosp');
+    const o=current.opt, price=o.price; current.price=price; current.hosp=o.k.some(id=>id==='hosp'||id==='hospc');
     window.__plano = o.name; /* usado na mensagem do WhatsApp */
     const save=OLD-price;
     $('keepSave').textContent = 'US$ '+fmt0(Math.max(save,0)*12)+' no ano';
@@ -2626,7 +2630,7 @@ td.decide-cell{padding:12px 10px}
     img:         {modo:'crm', viagem:true}
   };
   const DUR_PT = {'Monthly':'Mensal','3 months':'3 meses','6 months':'6 meses','9 months':'9 meses','1 Year':'1 ano','3 Years':'3 anos'};
-  const INSURANCE = {plus:'Unity Care Center', hosp:'SaudeMax', presidio:'Fortress Plan', st:'Short Term', img:'IMG Insurance', base:'EasyDoctors'};
+  const INSURANCE = {plus:'Unity Care Center', hosp:'SaudeMax', hospc:'SaudeMax', presidio:'Fortress Plan', st:'Short Term', img:'IMG Insurance', base:'EasyDoctors'};
   const formCfg = () => FORMS[current.opt && current.opt.key] || {modo:'crm'};
   const formModo = () => formCfg().modo;
   /* Base · mesma lógica do formulário EasyDoctors (Igor): só a quantidade; até 3 dependentes = Básico; 4 a 6 = Família +1/+2/+3 */
