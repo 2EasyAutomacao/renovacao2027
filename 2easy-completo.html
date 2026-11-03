@@ -2104,7 +2104,7 @@ td.decide-cell{padding:12px 10px}
     {key:'presidio', k:['presidio'], tag:'Hospital ilimitado', line:'Hospital ilimitado, clínico, especialistas e remédios.',
      f:{pcp:1,esp:1,hosp:1,rx:1,pedi:1}, cost:'Com dedutível e copay'},
     {key:'st', k:['st'], tag:'Curto prazo', line:'Clínico, especialistas, remédios e emergência com limite.',
-     f:{pcp:1,esp:1,hosp:.5,rx:1,pedi:1}, cost:'Plano de curto prazo'},
+     f:{pcp:1,esp:1,hosp:.5,rx:1,pedi:1,tele:1}, cost:'Plano de curto prazo'},
     {key:'img', k:['img'], tag:'Emergência', line:'Emergência com limite, remédios e exames de laboratório.',
      f:{hosp:.5,rx:1}, cost:'Com dedutível e copay'}
   ];
@@ -2138,7 +2138,7 @@ td.decide-cell{padding:12px 10px}
          ['Remédios e exames',[['y','Remédios com receita','Incluídos.']]],
          ['Como você paga',[['i','Com dedutível de US$ 7.500','Você paga até US$ 7.500 no ano antes de o plano cobrir o hospital.'],['i','Com copay','Você paga um valor fixo em consultas.'],['i','Até 64 anos','Disponível para pessoas de até 64 anos.']]]]},
     st:{who:'Para quem precisa de uma cobertura por um período curto.',
-      g:[['Consultas e médicos',[['y','Clínico geral presencial','Consultas presenciais.'],['y','Especialistas','Acesso a especialistas.'],['y','Prevenção e doenças crônicas','Incluídas.'],['y','Pediatria','Consultas pediátricas.'],['y','Telemedicina','Consultas por vídeo ou telefone.']]],
+      g:[['Consultas e médicos',[['y','Clínico geral presencial','Consultas presenciais.'],['y','Especialistas','Acesso a especialistas.'],['y','Pediatria','Consultas pediátricas.'],['y','Telemedicina','Consultas por vídeo ou telefone.']]],
          ['Hospital e emergência',[['h','Internação e emergência com limite','Cobre até um valor máximo.'],['n','Gestação e parto','Não incluídos.']]],
          ['Remédios e exames',[['y','Remédios com receita','Incluídos.']]],
          ['Como você paga',[['i','Plano de curto prazo','Tem duração limitada. Confirme o período na apólice.'],['i','Até 64 anos','Disponível para pessoas de até 64 anos.']]]]}
