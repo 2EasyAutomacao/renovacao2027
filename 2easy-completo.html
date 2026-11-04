@@ -2074,7 +2074,7 @@ td.decide-cell{padding:12px 10px}
     hospc: {name:'Easy Hospital', ind:237, mode:'table', table:{1:237,2:330,3:411,4:490,5:570}, extra:80, maxAge:64},
     img:   {name:'IMG Plano Emergencial', ind:100, fam3:270, mode:'age', maxAge:null, from:true},
     presidio:{name:'FortressPlan', ind:216, fam3:674, mode:'age', maxAge:64, from:true},
-    st:    {name:'Short Term Plan', ind:280, fam3:740, mode:'age', maxAge:64, from:true}
+    st:    {name:'Tri Term Plan', ind:280, fam3:740, mode:'age', maxAge:64, from:true}
   };
   /* opções exibidas · benefícios conforme a Matriz de Coberturas (11 set. 2026) */
   const FEAT = [
@@ -2631,7 +2631,7 @@ td.decide-cell{padding:12px 10px}
     img:         {modo:'crm', viagem:true}
   };
   const DUR_PT = {'Monthly':'Mensal','3 months':'3 meses','6 months':'6 meses','9 months':'9 meses','1 Year':'1 ano','3 Years':'3 anos'};
-  const INSURANCE = {plus:'Unity Care Center', hosp:'SaudeMax', hospc:'SaudeMax', presidio:'Fortress Plan', st:'Short Term', img:'IMG Insurance', base:'EasyDoctors'};
+  const INSURANCE = {plus:'Unity Care Center', hosp:'SaudeMax', hospc:'SaudeMax', presidio:'Fortress Plan', st:'Tri Term', img:'IMG Insurance', base:'EasyDoctors'};
   const formCfg = () => FORMS[current.opt && current.opt.key] || {modo:'crm'};
   const formModo = () => formCfg().modo;
   /* Base · mesma lógica do formulário EasyDoctors (Igor): só a quantidade; até 3 dependentes = Básico; 4 a 6 = Família +1/+2/+3 */
@@ -2744,7 +2744,7 @@ td.decide-cell{padding:12px 10px}
   function crmLinks(policies){
     const cfg=formCfg();
     const sm=(policies||[]).some(p=>p.payment_mode==='saudemax');
-    const btns=(policies||[]).filter(p=>p.form_url && (p.payment_mode ? p.payment_mode==='form' : p.insurance_type!=='SaudeMax')).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Short Term':'Short Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
+    const btns=(policies||[]).filter(p=>p.form_url && (p.payment_mode ? p.payment_mode==='form' : p.insurance_type!=='SaudeMax')).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Tri Term':'Tri Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
     if(cfg.link || sm) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link||SAUDEMAX_URL)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
     $('crmForms').innerHTML = btns.join('');
   }
