@@ -2743,9 +2743,11 @@ td.decide-cell{padding:12px 10px}
   const crmErro = t => { $('crmErr').textContent=t; $('crmErr').hidden=false; };
   function crmLinks(policies){
     const cfg=formCfg();
-    const sm=(policies||[]).some(p=>p.payment_mode==='saudemax');
+    /* botão da SaudeMax só quando o plano escolhido tem o Easy Hospital (o CRM pode listar apólices de uma escolha anterior) */
+    const temHosp=current.opt.k.some(id=>id==='hosp'||id==='hospc');
+    const sm=temHosp && (policies||[]).some(p=>p.payment_mode==='saudemax');
     const btns=(policies||[]).filter(p=>p.form_url && (p.payment_mode ? p.payment_mode==='form' : p.insurance_type!=='SaudeMax')).map((p,i)=>`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(p.form_url)}" target="_blank" rel="noopener">${p.form_done?'✓ ':''}Formulário ${esc(({'SaudeMax':'Easy Hospital','Unity Care Center':'Easy Doctors Plus','Fortress Plan':'FortressPlan','IMG Insurance':'IMG','Tri Term':'Tri Term'})[p.insurance_type]||p.insurance_type)} →</a>`);
-    if(cfg.link || sm) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link||SAUDEMAX_URL)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
+    if((cfg.link && temHosp) || sm) btns.push(`<a class="btn-primary" style="display:block;text-align:center;margin:10px 0" href="${esc(cfg.link||SAUDEMAX_URL)}" target="_blank" rel="noopener">Inscrição Easy Hospital (SaudeMax) →</a>`);
     $('crmForms').innerHTML = btns.join('');
   }
   function crmReserva(){
