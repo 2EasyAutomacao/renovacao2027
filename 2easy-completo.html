@@ -1919,7 +1919,7 @@ td.decide-cell{padding:12px 10px}
         </div>
       </div>
 
-      <div class="qk" data-show="presidio st img">
+      <div class="qk" data-show="img">
         <div class="qk-n">2</div>
         <div class="qk-b">
           <div class="qk-t" id="durT">Por quanto tempo?</div>
@@ -2626,8 +2626,8 @@ td.decide-cell{padding:12px 10px}
     plus:        {modo:'cartao'},
     'plus+hosp': {modo:'cartao', link:SAUDEMAX_URL},
     hosp:        {modo:'crm', link:SAUDEMAX_URL},
-    presidio:    {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
-    st:          {modo:'crm', dur:['Monthly','3 months','6 months','9 months','1 Year','3 Years']},
+    presidio:    {modo:'crm', durFixa:'1 Year'},   /* duração fixa de 1 ano: sem pergunta no passo 1 */
+    st:          {modo:'crm', durFixa:'1 Year'},
     img:         {modo:'crm', viagem:true}
   };
   const DUR_PT = {'Monthly':'Mensal','3 months':'3 meses','6 months':'6 meses','9 months':'9 meses','1 Year':'1 ano','3 Years':'3 anos'};
@@ -2709,7 +2709,8 @@ td.decide-cell{padding:12px 10px}
     const start=$('ckStart').value||'2027-01-01';
     return current.opt.k.map(id=>{
       const it={insurance_type:INSURANCE[id], plan_name:PLANS[id].name+(n>1?' Família':' Individual'), monthly_premium:+((current.exactById && current.exactById[id]!=null) ? current.exactById[id] : planPrice(id,current.ages,1)).toFixed(2), start_date:start, insured};
-      if(cfg.dur){ it.duration=$('ckDur').value; it.end_date=somaMeses(start, DUR_MESES[it.duration]||1); }
+      const dur = cfg.durFixa || (cfg.dur && $('ckDur').value);
+      if(dur){ it.duration=dur; it.end_date=somaMeses(start, DUR_MESES[dur]||1); }
       if(cfg.viagem){ it.start_date=$('ckIda').value; it.end_date=$('ckVolta').value; it.duration='Per Trip (days)'; }
       if(id === 'base'){ const bp = basePreco(); it.plan_name = 'EasyDoctors Base - ' + bp.nome.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace('Plano Familia', 'Familia'); /* igual ao nome que o v2 manda */ it.monthly_premium = bp.valor; it.insured = ['Owner']; } /* Base: plano e valor pela quantidade (BASE_PRECOS); so o titular */ if(id==='st') it.carrier=''; /* seguradora do Short Term: a definir com a Rose */
       if(!it.duration && ['EasyDoctors','Unity Care Center','SaudeMax'].includes(it.insurance_type)) it.duration='Lifetime'; /* 31/10: pedido do Luiz */
