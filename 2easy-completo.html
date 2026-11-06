@@ -2538,7 +2538,7 @@ td.decide-cell{padding:12px 10px}
     current.exact=tot;
     /* valor exato por plano (31/10, ajuste do Luiz): o CRM recebe o mesmo valor da etapa "Seu valor exato" */
     current.exactById = {}; if(ehBase){ current.exactById.base = basePreco().valor; } else { current.opt.k.forEach(id=>{ const a=ages.length?ages:current.ages; current.exactById[id]=planPrice(id,a,zipF); }); }
-    avisaSelecao();
+    if(!ehBase) avisaSelecao();   /* Base (V3): o webhook 1 avisa o CRM (selection_started) pelo servidor */
     setTimeout(()=>{
       $('qLoading').style.display='none'; $('qReady').style.display='block';
       $('qPlan').textContent = current.opt.name + ' · ' + fam;
@@ -2563,7 +2563,42 @@ td.decide-cell{padding:12px 10px}
   const acks=[$('ack1'),$('ack2')];
   acks.forEach(a=>a.onchange=()=>{ $('toPay').disabled = $('toStripe').disabled = !acks.every(x=>x.checked); });
   /* ===== Pagamento · Stripe via n8n (só Easy Doctors Base por enquanto) ===== */
-  const PAGAMENTO_URL = '/webhook/EasyDoctorsV2.1';   /* EasyDoctors v2: registra o titular, cria no Stripe e devolve o link */
+  /* ===== Easy Doctors Base · webhooks do EasyDoctors V3 (06/11) =====
+     1 titular (ao sair do passo 1) -> 2 dependentes (lista; vazia no "só eu") -> 3 link do Stripe (cobrança em 01/01).
+     O CRM (selection_started / checkout_started) é chamado pelos próprios webhooks, não pela página. */
+  const V3_URL = {titular:'/webhook/EasyDoctors-V3-Titular', dependentes:'/webhook/EasyDoctors-V3-Dependentes', link:'/webhook/EasyDoctors-V3-GeraLinkDePagamento'};
+  let baseClienteId = null;   /* id do Cliente devolvido pelo webhook 1 */
+  async function v3Post(url, corpo){
+    const q=new URLSearchParams(location.search);
+    try{
+      const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({policy:q.get('policy'), key:q.get('key')}, corpo))});
+      return await r.json();
+    }catch(e){ return null; }
+  }
+  const v3Msg = (d, padrao) => !d ? padrao
+    : d.error==='cliente_ja_cadastrado' ? ERRO_JA_CLIENTE
+    : (d.error==='email_ja_cadastrado' && d.bloqueados && d.bloqueados.length) ? (d.bloqueados[0].mensagem || ('O e-mail '+d.bloqueados[0].email+' já está cadastrado no Easy Doctors.'))
+    : (d.message || padrao);
+  /* webhook 1: registra/atualiza o titular e guarda o cliente_id */
+  async function v3Titular(){
+    const d = await v3Post(V3_URL.titular, {
+      nome:$('ckName').value.trim(), email:$('ckEmail').value.trim().toLowerCase(), telefone:telE164($('ckPhone').value),
+      genero:$('ckSexo').value, data_nascimento:$('dobMain').value, zip:$('zip').value.trim(),
+      tipoDocumento:Number($('ckDocTipo').value), numeroDocumento:$('ckDoc').value.replace(/[^0-9A-Za-z]/g,''),   /* código da página (0 CPF · 1 SSN · 2 ITIN · 3 Passaporte); o V3 converte */
+      URL_utmfy:location.href});
+    if(d && d.success && d.cliente_id){ baseClienteId = d.cliente_id; return {ok:true}; }
+    baseClienteId = null;
+    return {ok:false, msg:v3Msg(d, ERRO_REGISTRO)};
+  }
+  /* webhook 2: lista de dependentes do titular (vazia = só o titular; quem saiu fica marcado como removido no banco) */
+  async function v3Dependentes(lista){
+    const d = await v3Post(V3_URL.dependentes, {cliente_id:baseClienteId, email:$('ckEmail').value.trim().toLowerCase(), dependentes:lista});
+    if(d && d.success) return {ok:true};
+    return {ok:false, msg:v3Msg(d, ERRO_REGISTRO), bloqueados:(d && d.bloqueados) || []};
+  }
+  /* estado "carregando" dos botões */
+  const ocupa = (b, txt) => { b.dataset.rot = b.dataset.rot || b.textContent; b.disabled = true; b.textContent = txt; };
+  const libera = b => { b.disabled = false; if(b.dataset.rot) b.textContent = b.dataset.rot; };
   /* Preços do Easy Doctors Base (tabela Plano do Supabase) — plano família vai até 4 pessoas */
   const PRICE_BASE = {individual:'price_1SCteYGbfw1lxjkC8rdVqyce', familia:'price_1SCmotGbfw1lxjkCggettiPx'};
   const MAX_PESSOAS_BASE = 4;
@@ -2575,6 +2610,8 @@ td.decide-cell{padding:12px 10px}
   const STRIPE_PLANS = ['base'];
   const DATAS = {'2027-01-01':'1º de janeiro de 2027','2026-12-01':'1º de dezembro de 2026'};
   const ERRO_PAG = 'Não conseguimos abrir o pagamento agora. Tente de novo em instantes ou fale com um especialista.';
+  const ERRO_REGISTRO = 'Não conseguimos registrar seus dados agora. Tente de novo em instantes ou fale com um especialista.';
+  const ERRO_SEM_CLIENTE = 'Volte ao passo 1 e toque de novo em “Ver meu valor exato” para confirmar seus dados.';
   /* ===== Easy Doctors Plus · formulário de cartão =====
      Os dados vão para o n8n (/webhook/renovacao-cartao), que repassa ao CRM. */
   const CARTAO_URL = '/webhook/renovacao-cartao';
@@ -2641,39 +2678,23 @@ td.decide-cell{padding:12px 10px}
     goStep(3);
   };
   $('finishSpec').onclick=()=>window.openSpec(current.opt.name);
-  /* Base (06/11): preço e pagamento na mesma página -> avisa o CRM (In Checkout) e abre o Stripe */
-  $('toStripe').onclick=()=>{
-    try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}}); }catch(e){}
-    abrePagamentoBase($('toStripe'), $('qPayErr'), 'Seguir para o pagamento →');
-  };
+  /* Base (06/11, V3): preço e pagamento na mesma página -> webhook 3 gera o link do Stripe (o próprio webhook avisa o CRM: In Checkout) */
+  $('toStripe').onclick=()=>abrePagamentoBase($('toStripe'), $('qPayErr'), 'Seguir para o pagamento →');
   $('finish').onclick=()=>abrePagamentoBase($('finish'), $('payErr'), 'Ir para o pagamento seguro →');
   async function abrePagamentoBase(b, errEl, rotulo){
     b.disabled=true; b.textContent='Abrindo o pagamento…'; errEl.hidden=true;
     const pagar='inicio'; /* página da renovação: sempre começa em janeiro (assinatura imediata é pela easydoctors.us) */
     const q=new URLSearchParams(location.search);
     const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
-    let d=null;
-    try{
-      const bp=basePreco(), pessoas=bp.pessoas;
-      const doc=$('ckDoc').value.replace(/[^0-9A-Za-z]/g,'');
-      const falha = !doc ? ERRO_DOC : null;
-      if(falha){ errEl.textContent=falha; errEl.hidden=false; b.disabled=false; b.textContent=rotulo; return; }
-      const r=await fetch(PAGAMENTO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-        pedido_id:q.get('policy'), client_reference_id:q.get('policy'),
-        nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value),
-        tipoDocumento:Number($('ckDocTipo').value), numeroDocumento:doc,
-        stripe_price_id: bp.price_id, valor_total: bp.valor, dependentes: pessoas-1, tipo_plano: pessoas===1?'titular':'titular_dependentes', plano_nome: bp.nome,
-        genero: $('ckSexo').value, data_nascimento: $('dobMain').value,
-        inicio_janeiro: pagar==='inicio', inicio:$('ckStart').value,
-        success_url:volta('ok'), cancel_url:volta('cancelado'), origin_url:location.origin+location.pathname+'?policy='+encodeURIComponent(q.get('policy')||'')+'&key='+encodeURIComponent(q.get('key')||''),
-        vendedor:'', URL_utmfy:location.href,
-        origem:'renovacao_2027', plano:current.opt.key, pessoas, zip:$('zip').value.trim(),
-        /* 06/11 (V3): dados de cada dependente, mesmos campos do titular. tipoDocumento no MESMO código do titular (0 CPF · 1 SSN · 2 ITIN · 3 Passaporte) */
-        dependentes_dados: baseDepsDados()})});
-      d=await r.json();
-    }catch(e){}
+    if(!baseClienteId){ errEl.textContent=ERRO_SEM_CLIENTE; errEl.hidden=false; b.disabled=false; b.textContent=rotulo; return; }
+    const bp=basePreco();
+    /* webhook 3 (V3): confere pessoas x preço no banco, cria o customer e o Checkout do Stripe (mode=setup, cobrança em 01/01/2027) */
+    const d = await v3Post(V3_URL.link, {
+      cliente_id:baseClienteId, email:$('ckEmail').value.trim().toLowerCase(),
+      stripe_price_id:bp.price_id, success_url:volta('ok'), cancel_url:volta('cancelado'),
+      inicio:$('ckStart').value, zip:$('zip').value.trim(), nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value)});
     if(d && d.success && d.data && d.data.checkout_url){ location.href=d.data.checkout_url; return; }
-    errEl.textContent = (d && d.error==='cliente_ja_cadastrado') ? ERRO_JA_CLIENTE : ((d && (d.erro || d.message)) || ERRO_PAG); errEl.hidden=false;
+    errEl.textContent = v3Msg(d, ERRO_PAG); errEl.hidden=false;
     b.disabled=false; b.textContent=rotulo;
   }
   /* ===== Formulário que se adapta ao plano escolhido ===== */
@@ -2709,8 +2730,6 @@ td.decide-cell{padding:12px 10px}
   const basePreco = () => basePrecoDe(nBase());
   const baseFam = () => { const n=nBase(); return n===1 ? 'Individual' : 'Família · '+n+' pessoas'; };
   const precoTxt = p => p.nome+' · US$ '+fmt(p.valor)+'/mês'+(p.pessoas>4?' (inclui '+(p.pessoas-4)+' dependente'+(p.pessoas-4>1?'s':'')+' extra'+(p.pessoas-4>1?'s':'')+')':'');
-  /* verificação dos e-mails no nosso banco (endpoint a criar no V3). Vazio = desligada: a página só confere repetidos entre as pessoas do formulário */
-  const VERIFICA_EMAILS_URL = '';
   const DOC_NOMES = {'0':'CPF','1':'SSN','2':'ITIN','3':'Passaporte'};
   const depQtdSel = () => +$('depQtd').value || 0;
   function depBloco(i, v){
@@ -2772,18 +2791,9 @@ td.decide-cell{padding:12px 10px}
     }
     return null;
   }
-  /* e-mails no nosso banco: só roda quando VERIFICA_EMAILS_URL existir. Resposta esperada: {success, bloqueados:[{email, mensagem}]} */
-  async function verificaEmails(lista){
-    if(!VERIFICA_EMAILS_URL) return null;
-    try{
-      const r = await fetch(VERIFICA_EMAILS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emails:lista})});
-      const d = await r.json();
-      return (d && d.bloqueados && d.bloqueados.length) ? d.bloqueados[0] : null;
-    }catch(e){ return null; }   /* falha de rede não trava a venda; o fluxo confere de novo */
-  }
-  /* lista enviada ao v2/V3 (só os dependentes que entram no plano) */
-  function baseDepsDados(){
-    return [...$('depList').querySelectorAll('.dep-card')].slice(0, baseDeps).map(c=>{
+  /* lista enviada ao webhook 2 do V3. n = quantos entram no plano (padrão: os que já foram confirmados) */
+  function baseDepsDados(n){
+    return [...$('depList').querySelectorAll('.dep-card')].slice(0, n===undefined ? baseDeps : n).map(c=>{
       const d=depLe(c), tel=d.tel.replace(/\D/g,'');
       return {nome:d.nome, data_nascimento:d.nasc, genero:d.sexo, tipoDocumento:Number(d.docTipo), tipoDocumentoNome:DOC_NOMES[d.docTipo],
               numeroDocumento:d.doc.replace(/[^0-9A-Za-z]/g,''), codigoPais:d.ddi, telefone:tel, telefone_e164:d.ddi+tel, email:d.email.toLowerCase()};
@@ -2795,24 +2805,42 @@ td.decide-cell{padding:12px 10px}
     return `<div><span>Quem vai usar</span><b style="text-align:right">${nomes.map(esc).join('<br>')}</b></div>`;
   }
   /* passo 1 · botões do "Quem vai usar?" */
-  $('baseDepBtn').onclick = ()=>{ if(!passo1Ok()) return; avisaSelecao(); goStep('dep'); };
+  const erroPasso1 = msg => { $('ckErr').textContent = msg; $('ckErr').hidden = false; $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); };
+  /* "Tenho dependentes": webhook 1 (titular) -> etapa dos dependentes */
+  $('baseDepBtn').onclick = async ()=>{
+    if(!passo1Ok()) return;
+    const b = $('baseDepBtn'); ocupa(b, 'Registrando…'); $('baseSoloBtn').disabled = true;
+    const t = await v3Titular();
+    libera(b); $('baseSoloBtn').disabled = false;
+    if(!t.ok) return erroPasso1(t.msg);
+    goStep('dep');
+  };
+  /* "Ver meu valor exato" (só o titular): webhook 1 -> webhook 2 com a lista vazia -> preço */
   $('baseSoloBtn').onclick = async ()=>{
     if(!passo1Ok()) return;
-    const b=await verificaEmails([$('ckEmail').value.trim().toLowerCase()]);
-    if(b){ $('ckErr').textContent=b.mensagem||'Este e-mail já está cadastrado no Easy Doctors.'; $('ckErr').hidden=false; $('ckEmail').focus(); return; }
+    const b = $('baseSoloBtn'); ocupa(b, 'Registrando…'); $('baseDepBtn').disabled = true;
+    const t = await v3Titular();
+    const r = t.ok ? await v3Dependentes([]) : t;
+    libera(b); $('baseDepBtn').disabled = false;
+    if(!r.ok) return erroPasso1(r.msg);
     baseDeps = 0; calculaPreco();
   };
-  /* etapa dos dependentes · "Ver meu valor exato" */
+  /* etapa dos dependentes · "Ver meu valor exato": webhook 2 com a lista -> preço */
   $('depGo').onclick = async ()=>{
     const v = validaDeps();
     $('depErr').hidden = !v; $('depErr').textContent = v ? v.msg : '';
     if(v){ if(v.el){ const f=v.el.closest('.field'); if(f) f.classList.add('bad'); v.el.focus(); } $('depErr').scrollIntoView({behavior:'smooth',block:'center'}); return; }
-    const b = $('depGo'); b.disabled = true;
-    const lista = [$('ckEmail').value.trim()].concat([...$('depList').querySelectorAll('[data-f="email"]')].map(x=>x.value.trim())).map(e=>e.toLowerCase());
-    const bloq = await verificaEmails(lista);
-    b.disabled = false;
-    if(bloq){ $('depErr').textContent = bloq.mensagem || ('O e-mail '+bloq.email+' já está cadastrado no Easy Doctors.'); $('depErr').hidden=false; return; }
-    baseDeps = depQtdSel(); calculaPreco();
+    if(!baseClienteId){ $('depErr').textContent = ERRO_SEM_CLIENTE; $('depErr').hidden = false; return; }
+    const b = $('depGo'), n = depQtdSel(); ocupa(b, 'Registrando…');
+    const r = await v3Dependentes(baseDepsDados(n));
+    libera(b);
+    if(!r.ok){
+      $('depErr').textContent = r.msg; $('depErr').hidden = false;
+      /* marca o campo do e-mail recusado */
+      (r.bloqueados||[]).forEach(x=>{ const el=[...$('depList').querySelectorAll('[data-f="email"]')].find(i=>i.value.trim().toLowerCase()===String(x.email||'').toLowerCase()); if(el){ const f=el.closest('.field'); if(f) f.classList.add('bad'); } });
+      $('depErr').scrollIntoView({behavior:'smooth',block:'center'}); return;
+    }
+    baseDeps = n; calculaPreco();
   };
   function aplicaFormulario(){
     const key = current.opt ? current.opt.key : '';
