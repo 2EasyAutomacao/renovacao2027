@@ -322,6 +322,16 @@ footer p+p{margin-top:8px}
 .step-nav{display:flex;gap:12px;margin-top:24px;align-items:center}
 .step-nav .btn-primary{flex:1}
 .back{background:none;border:none;color:var(--mute);font-weight:600;font-size:15px;cursor:pointer;padding:12px}
+/* Easy Doctors Base (06/11): botões do "Quem vai usar?" e blocos de dependentes */
+.who-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.who-btns .btn-primary{padding:14px 16px;font-size:16px}
+.btn-sec{display:flex;justify-content:center;align-items:center;width:100%;background:#fff;color:var(--indigo-2);border:1.5px solid var(--indigo-2);border-radius:16px;padding:14px 16px;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn-sec:hover{background:var(--paper)}
+.tel-ddi{display:grid;grid-template-columns:118px 1fr;gap:8px}
+.tel-ddi select{padding-left:10px;padding-right:6px}
+.dep-card .fields{margin-top:14px}
+.field.bad input,.field.bad select{border-color:#D14343;background:#FFF5F5}
+@media (max-width:560px){.who-btns{grid-template-columns:1fr}}
 
 .quote{border:1px solid var(--line);border-radius:20px;overflow:hidden}
 .quote-head{background:var(--indigo);color:#fff;padding:20px 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
@@ -1870,22 +1880,6 @@ td.decide-cell{padding:12px 10px}
       <h3 id="ck-t">Confirme seus dados</h3>
       <p class="s-lede">Sua previsão foi de <b id="ckFore">US$ 187,90/mês</b>. Confirme abaixo e calculamos o valor exato. Você só paga depois de ver.</p>
 
-      <div class="qk" data-show="base">
-        <div class="qk-n">1</div>
-        <div class="qk-b">
-          <div class="qk-t">Quem vai usar?</div>
-          <small class="qk-h">Só a quantidade define o plano. Os dependentes são incluídos por você dentro do Easy Doctors, depois da ativação.</small>
-          <div class="seg" role="radiogroup">
-            <label><input type="radio" name="who" value="eu" checked>Apenas eu</label>
-            <label><input type="radio" name="who" value="dep">Eu + dependentes</label>
-          </div>
-          <div class="fields" id="whoDepsBox" hidden>
-            <div class="field"><label for="whoDeps">Quantos dependentes?</label><select id="whoDeps"><option value="1">1 dependente</option><option value="2">2 dependentes</option><option value="3">3 dependentes</option><option value="4">4 dependentes</option><option value="5">5 dependentes</option><option value="6">6 dependentes</option></select></div>
-          </div>
-          <small class="qk-h" id="whoPrice" style="display:block;margin-top:10px"></small>
-        </div>
-      </div>
-
       <div class="qk">
         <div class="qk-n">1</div>
         <div class="qk-b">
@@ -1956,8 +1950,43 @@ td.decide-cell{padding:12px 10px}
         </div>
       </div>
 
+      <!-- Easy Doctors Base (06/11): 4ª pergunta com 2 botões. "Tenho dependentes" -> etapa dos dependentes; "Ver meu valor exato" -> preço (só o titular) -->
+      <div class="qk" data-show="base" id="baseWho">
+        <div class="qk-n">4</div>
+        <div class="qk-b">
+          <div class="qk-t">Quem vai usar?</div>
+          <small class="qk-h">Cada pessoa recebe o próprio acesso ao Easy Doctors. Se for incluir dependentes, pedimos os dados de cada um na próxima etapa.</small>
+          <div class="who-btns">
+            <button type="button" class="btn-sec" id="baseDepBtn">Tenho dependentes →</button>
+            <button type="button" class="btn-primary" id="baseSoloBtn">Ver meu valor exato →</button>
+          </div>
+          <small class="qk-h" style="display:block;margin-top:10px">Só para você: Plano Individual · US$ 29,90/mês.</small>
+        </div>
+      </div>
+
       <p class="mk-err" id="ckErr" hidden></p>
-      <div class="step-nav"><button class="btn-primary" id="toQuote" disabled>Ver meu valor exato →</button></div>
+      <div class="step-nav" id="st1Nav"><button class="btn-primary" id="toQuote" disabled>Ver meu valor exato →</button></div>
+      <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
+    </div>
+
+    <!-- step dependentes · só Easy Doctors Base (06/11): mesmos dados do titular para cada dependente -->
+    <div class="step" id="stDep">
+      <h3>Dados dos dependentes</h3>
+      <p class="s-lede">Cada dependente recebe o próprio login no Easy Doctors. Por isso, use um e-mail diferente para cada pessoa.</p>
+      <div class="qk">
+        <div class="qk-n">1</div>
+        <div class="qk-b">
+          <div class="qk-t">Quantos dependentes?</div>
+          <small class="qk-h">Sem contar você, que é o titular.</small>
+          <div class="fields">
+            <div class="field"><label for="depQtd">Dependentes</label><select id="depQtd"><option value="">Selecione</option><option value="1">1 dependente</option><option value="2">2 dependentes</option><option value="3">3 dependentes</option><option value="4">4 dependentes</option><option value="5">5 dependentes</option><option value="6">6 dependentes</option></select></div>
+          </div>
+          <small class="qk-h" id="depPrice" style="display:block;margin-top:10px"></small>
+        </div>
+      </div>
+      <div id="depList"></div>
+      <p class="mk-err" id="depErr" hidden></p>
+      <div class="step-nav"><button class="back" data-back="1">← Voltar</button><button class="btn-primary" id="depGo" disabled>Ver meu valor exato →</button></div>
       <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
     </div>
 
@@ -1983,7 +2012,14 @@ td.decide-cell{padding:12px 10px}
         <div class="reserve"><span>★</span><span><span class="so-concierge">Sua proposta e o <b>Concierge de US$ 100/mês por US$ 0</b> estão reservados por</span><span class="sem-concierge">Sua proposta está reservada por</span></span><span class="timer" id="timer">08:00</span></div>
         <label class="check"><input type="checkbox" id="ack1">Entendo que os planos da 2Easy não são planos do Marketplace/ACA e não cobrem doenças pré-existentes.</label>
         <label class="check"><input type="checkbox" id="ack2">Li e aceito os termos do plano e a cobrança mensal recorrente.</label>
-        <div class="step-nav"><button class="back" data-back="1">← Voltar</button><button class="btn-primary" id="toPay" disabled>Continuar →</button></div>
+        <div class="step-nav" id="st2Nav"><button class="back" data-back="1">← Voltar</button><button class="btn-primary" id="toPay" disabled>Continuar →</button></div>
+        <!-- Easy Doctors Base (06/11): preço e pagamento na mesma página; o botão abre direto a página do Stripe -->
+        <div data-show="base">
+          <p class="s-lede" id="qPayNote" style="margin-top:14px">Você não paga nada hoje. No próximo passo você salva o cartão no ambiente seguro do Stripe e a 1ª mensalidade é cobrada em 1º de janeiro de 2027.</p>
+          <p class="mk-err" id="qPayErr" hidden></p>
+          <div class="step-nav"><button class="back" data-back="1">← Voltar</button><button class="btn-primary" id="toStripe" disabled>Seguir para o pagamento →</button></div>
+          <p class="secure">🔒 Os dados do cartão são digitados no Stripe e não passam pela 2Easy.</p>
+        </div>
         <button class="rx-spec light" data-spec><span class="dot" aria-hidden="true"></span>Tenho uma dúvida · falar com um especialista</button>
       </div>
     </div>
@@ -2443,8 +2479,12 @@ td.decide-cell{padding:12px 10px}
     return el;
   }
   function goStep(k){
+    /* k = 1..4 ou 'dep' (dependentes do Easy Doctors Base) */
+    $('stDep').classList.toggle('active', k==='dep');
     ['st1','st2','st3','st4'].forEach((s,i)=>$(s).classList.toggle('active',i===k-1));
-    [...$('progress').children].forEach((d,i)=>d.classList.toggle('on',i<Math.min(k,3)));
+    /* Base (06/11): 1 · Seus dados · 2 · Dependentes · 3 · Preço e pagamento */
+    const on = k==='dep' ? 2 : (formModo()==='stripe' ? (k>=2 ? 3 : 1) : Math.min(k,3));
+    [...$('progress').children].forEach((d,i)=>d.classList.toggle('on',i<on));
     $('sheet').scrollTop=0;
   }
   let timerId;
@@ -2463,18 +2503,28 @@ td.decide-cell{padding:12px 10px}
   const close=()=>{$('sheet').classList.remove('open');document.body.classList.remove('lock');};
   $('closeSheet').onclick=close;
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ if($('keep').classList.contains('open')) $('keepNo').click(); else if($('idle').classList.contains('open')) $('idleLater').click(); else close(); }});
-  document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>goStep(+b.dataset.back));
+  document.querySelectorAll('[data-back]').forEach(b=>b.onclick=()=>{
+    /* Base com dependentes: o "Voltar" do preço volta para a etapa dos dependentes */
+    if(b.dataset.back==='1' && b.closest('#st2') && formModo()==='stripe' && baseDeps>0) return goStep('dep');
+    goStep(+b.dataset.back);
+  });
 
   const ageOn=(d)=>{ if(!d) return null; const b=new Date(d+'T00:00:00'), r=new Date('2027-01-01T00:00:00'); let a=r.getFullYear()-b.getFullYear(); if(r<new Date(r.getFullYear(),b.getMonth(),b.getDate())) a--; return a; };
   document.querySelectorAll('input[name="hq"]').forEach(r=>r.onchange=()=>{
     $('toQuote').disabled=false;
     $('hqWarn').classList.toggle('show', r.value==='sim' && r.checked);
   });
-  $('toQuote').onclick=()=>{
-    /* validação do passo 1 conforme o plano escolhido */
+  /* validação do passo 1 conforme o plano escolhido (true = pode seguir) */
+  function passo1Ok(){
     const v1 = validaPasso1();
     $('ckErr').hidden = !v1; $('ckErr').textContent = v1 ? v1.msg : '';
-    if(v1){ $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); if(v1.el && $(v1.el)) $(v1.el).focus(); return; }
+    if(v1){ $('ckErr').scrollIntoView({behavior:'smooth',block:'center'}); if(v1.el && $(v1.el)) $(v1.el).focus(); return false; }
+    return true;
+  }
+  /* Selection Stopped (31/10): cliente terminou "Seus dados" -> avisa o CRM (1 vez por plano na sessao) */
+  function avisaSelecao(){ try{ window.__selEnv = window.__selEnv || {}; if(window.__portal && !window.__selEnv[current.opt.key]){ window.__selEnv[current.opt.key] = 1; window.__portal('selection_started', {plans: crmPlans()}); } }catch(e){} }
+  $('toQuote').onclick=()=>{ if(passo1Ok()) calculaPreco(); };
+  function calculaPreco(){
     goStep(2); $('qLoading').style.display='block'; $('qReady').style.display='none';
     const dobs=[$('dobMain').value,...[...$('deps').querySelectorAll('input[type=date]')].map(i=>i.value)];
     const ages=dobs.map(ageOn).filter(a=>a!==null && a>=0);
@@ -2488,8 +2538,7 @@ td.decide-cell{padding:12px 10px}
     current.exact=tot;
     /* valor exato por plano (31/10, ajuste do Luiz): o CRM recebe o mesmo valor da etapa "Seu valor exato" */
     current.exactById = {}; if(ehBase){ current.exactById.base = basePreco().valor; } else { current.opt.k.forEach(id=>{ const a=ages.length?ages:current.ages; current.exactById[id]=planPrice(id,a,zipF); }); }
-    /* Selection Stopped (31/10): cliente terminou "Seus dados" -> avisa o CRM (1 vez por plano na sessao) */
-    try{ window.__selEnv = window.__selEnv || {}; if(window.__portal && !window.__selEnv[current.opt.key]){ window.__selEnv[current.opt.key] = 1; window.__portal('selection_started', {plans: crmPlans()}); } }catch(e){}
+    avisaSelecao();
     setTimeout(()=>{
       $('qLoading').style.display='none'; $('qReady').style.display='block';
       $('qPlan').textContent = current.opt.name + ' · ' + fam;
@@ -2503,15 +2552,16 @@ td.decide-cell{padding:12px 10px}
       $('doneName').textContent = current.opt.name;
       $('qLines').innerHTML =
         parts.map(x=>`<div><span>${x.name} · ${fam}${x.old?` <s style="opacity:.6">US$ ${fmt(x.old)}</s> <b style="color:var(--mint)">promoção</b>`:''}</span><b>US$ ${fmt(x.price)}</b></div>`).join('')+
+        (ehBase ? basePessoasHtml() : '')+
         (CONC && current.opt.k.includes('plus')?`<div class="giftline"><span>★ Concierge 2Easy (12 meses) <s>US$ 100,00</s></span><b>US$ 0,00 · prêmio</b></div>`:'')+
         `<div><span>Taxa de adesão</span><b>US$ 0,00</b></div>`+
         `<div class="tot"><span>${formModo()==='stripe'?'Mensalidade a partir de jan. 2027':'Mensalidade prevista a partir de jan. 2027'}</span><span>US$ ${fmt(tot)}</span></div>`+
         `<div class="tot" style="color:var(--mint)"><span style="color:var(--mint)">Você paga hoje</span><span>US$ 0,00</span></div>`;
     },1600);
-  };
+  }
   function openCk(){ $('ckFore').textContent='US$ '+fmt(current.price)+'/mês'; }
   const acks=[$('ack1'),$('ack2')];
-  acks.forEach(a=>a.onchange=()=>$('toPay').disabled=!acks.every(x=>x.checked));
+  acks.forEach(a=>a.onchange=()=>{ $('toPay').disabled = $('toStripe').disabled = !acks.every(x=>x.checked); });
   /* ===== Pagamento · Stripe via n8n (só Easy Doctors Base por enquanto) ===== */
   const PAGAMENTO_URL = '/webhook/EasyDoctorsV2.1';   /* EasyDoctors v2: registra o titular, cria no Stripe e devolve o link */
   /* Preços do Easy Doctors Base (tabela Plano do Supabase) — plano família vai até 4 pessoas */
@@ -2591,8 +2641,14 @@ td.decide-cell{padding:12px 10px}
     goStep(3);
   };
   $('finishSpec').onclick=()=>window.openSpec(current.opt.name);
-  $('finish').onclick=async()=>{
-    const b=$('finish'); b.disabled=true; b.textContent='Abrindo o pagamento…'; $('payErr').hidden=true;
+  /* Base (06/11): preço e pagamento na mesma página -> avisa o CRM (In Checkout) e abre o Stripe */
+  $('toStripe').onclick=()=>{
+    try{ if(window.__portal) window.__ckResp = window.__portal('checkout_started', {plans: crmPlans(), cliente:{nome:$('ckName').value.trim(), telefone:telE164($('ckPhone').value), email:$('ckEmail').value.trim(), zip:$('zip').value.trim()}}); }catch(e){}
+    abrePagamentoBase($('toStripe'), $('qPayErr'), 'Seguir para o pagamento →');
+  };
+  $('finish').onclick=()=>abrePagamentoBase($('finish'), $('payErr'), 'Ir para o pagamento seguro →');
+  async function abrePagamentoBase(b, errEl, rotulo){
+    b.disabled=true; b.textContent='Abrindo o pagamento…'; errEl.hidden=true;
     const pagar='inicio'; /* página da renovação: sempre começa em janeiro (assinatura imediata é pela easydoctors.us) */
     const q=new URLSearchParams(location.search);
     const volta=st=>{ const u=new URL(location.href); u.searchParams.set('pagamento',st); u.searchParams.set('plano',current.opt.key); u.searchParams.set('quando',pagar); u.searchParams.set('inicio',$('ckStart').value); return u.toString(); };
@@ -2601,7 +2657,7 @@ td.decide-cell{padding:12px 10px}
       const bp=basePreco(), pessoas=bp.pessoas;
       const doc=$('ckDoc').value.replace(/[^0-9A-Za-z]/g,'');
       const falha = !doc ? ERRO_DOC : null;
-      if(falha){ $('payErr').textContent=falha; $('payErr').hidden=false; b.disabled=false; b.textContent='Ir para o pagamento seguro →'; return; }
+      if(falha){ errEl.textContent=falha; errEl.hidden=false; b.disabled=false; b.textContent=rotulo; return; }
       const r=await fetch(PAGAMENTO_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
         pedido_id:q.get('policy'), client_reference_id:q.get('policy'),
         nome:$('ckName').value.trim(), email:$('ckEmail').value.trim(), telefone:telE164($('ckPhone').value),
@@ -2611,13 +2667,15 @@ td.decide-cell{padding:12px 10px}
         inicio_janeiro: pagar==='inicio', inicio:$('ckStart').value,
         success_url:volta('ok'), cancel_url:volta('cancelado'), origin_url:location.origin+location.pathname+'?policy='+encodeURIComponent(q.get('policy')||'')+'&key='+encodeURIComponent(q.get('key')||''),
         vendedor:'', URL_utmfy:location.href,
-        origem:'renovacao_2027', plano:current.opt.key, pessoas, zip:$('zip').value.trim()})});
+        origem:'renovacao_2027', plano:current.opt.key, pessoas, zip:$('zip').value.trim(),
+        /* 06/11 (V3): dados de cada dependente, mesmos campos do titular. tipoDocumento no MESMO código do titular (0 CPF · 1 SSN · 2 ITIN · 3 Passaporte) */
+        dependentes_dados: baseDepsDados()})});
       d=await r.json();
     }catch(e){}
     if(d && d.success && d.data && d.data.checkout_url){ location.href=d.data.checkout_url; return; }
-    $('payErr').textContent = (d && d.error==='cliente_ja_cadastrado') ? ERRO_JA_CLIENTE : ((d && (d.erro || d.message)) || ERRO_PAG); $('payErr').hidden=false;
-    b.disabled=false; b.textContent='Ir para o pagamento seguro →';
-  };
+    errEl.textContent = (d && d.error==='cliente_ja_cadastrado') ? ERRO_JA_CLIENTE : ((d && (d.erro || d.message)) || ERRO_PAG); errEl.hidden=false;
+    b.disabled=false; b.textContent=rotulo;
+  }
   /* ===== Formulário que se adapta ao plano escolhido ===== */
   /* modo: 'stripe' = Easy Doctors Base (v2 + Stripe, cobrança em 01/01) · 'crm' = demais planos (formulário do CRM, conta bancária) */
   const SAUDEMAX_URL = 'https://enroll.saude-max.com/elizalo#estimate';
@@ -2642,17 +2700,120 @@ td.decide-cell{padding:12px 10px}
     {pessoas:6, nome:'Plano Família +2', valor:79.70, price_id:'price_1SKmAlGbfw1lxjkCIAHUXKBj'},
     {pessoas:7, nome:'Plano Família +3', valor:94.60, price_id:'price_1SKmBZGbfw1lxjkCiJ7xYXf6'}
   ];
-  const nBase = () => { const w=document.querySelector('input[name=who]:checked'); return (!w || w.value==='eu') ? 1 : 1+(+$('whoDeps').value||1); };
-  const basePreco = () => { const n=nBase(); return Object.assign({}, BASE_PRECOS.find(p=>n<=p.pessoas), {pessoas:n}); };
+  /* ===== Easy Doctors Base · dependentes (06/11, V3) =====
+     baseDeps = quantos dependentes entram no plano (0 = só o titular). Muda só quando o cliente avança:
+     "Ver meu valor exato" no passo 1 -> 0 · "Ver meu valor exato" na etapa dos dependentes -> quantidade escolhida. */
+  let baseDeps = 0;
+  const nBase = () => 1 + baseDeps;
+  const basePrecoDe = n => Object.assign({}, BASE_PRECOS.find(p=>n<=p.pessoas), {pessoas:n});
+  const basePreco = () => basePrecoDe(nBase());
   const baseFam = () => { const n=nBase(); return n===1 ? 'Individual' : 'Família · '+n+' pessoas'; };
-  function atualizaWho(){
-    const dep = (document.querySelector('input[name=who]:checked')||{}).value==='dep';
-    $('whoDepsBox').hidden = !dep;
-    const p=basePreco();
-    $('whoPrice').textContent = p.nome+' · US$ '+fmt(p.valor)+'/mês'+(p.pessoas>4?' (inclui '+(p.pessoas-4)+' dependente'+(p.pessoas-4>1?'s':'')+' extra'+(p.pessoas-4>1?'s':'')+')':'');
+  const precoTxt = p => p.nome+' · US$ '+fmt(p.valor)+'/mês'+(p.pessoas>4?' (inclui '+(p.pessoas-4)+' dependente'+(p.pessoas-4>1?'s':'')+' extra'+(p.pessoas-4>1?'s':'')+')':'');
+  /* verificação dos e-mails no nosso banco (endpoint a criar no V3). Vazio = desligada: a página só confere repetidos entre as pessoas do formulário */
+  const VERIFICA_EMAILS_URL = '';
+  const DOC_NOMES = {'0':'CPF','1':'SSN','2':'ITIN','3':'Passaporte'};
+  const depQtdSel = () => +$('depQtd').value || 0;
+  function depBloco(i, v){
+    v = v || {};
+    const sel = (opts, val) => opts.map(([k,t])=>`<option value="${k}"${String(val)===k?' selected':''}>${t}</option>`).join('');
+    const el = document.createElement('div');
+    el.className = 'qk dep-card'; el.dataset.i = i;
+    el.innerHTML = `<div class="qk-n">${i+2}</div><div class="qk-b">
+      <div class="qk-t">Dependente ${i+1}</div>
+      <div class="fields">
+        <div class="field full"><label>Nome completo</label><input data-f="nome" autocomplete="off" value="${esc(v.nome||'')}"></div>
+        <div class="field"><label>Data de nascimento</label><input data-f="nasc" type="date" value="${esc(v.nasc||'')}"></div>
+        <div class="field"><label>Sexo</label><select data-f="sexo">${sel([['','Selecione'],['female','Feminino'],['male','Masculino']], v.sexo||'')}</select></div>
+        <div class="field"><label>Documento</label><select data-f="docTipo">${sel([['0','CPF'],['1','SSN'],['2','ITIN'],['3','Passaporte']], v.docTipo||'0')}</select></div>
+        <div class="field"><label>Número do documento</label><input data-f="doc" autocomplete="off" value="${esc(v.doc||'')}" placeholder="Usado para criar o acesso"></div>
+        <div class="field"><label>Telefone</label><div class="tel-ddi"><select data-f="ddi">${sel([['+1','+1 EUA'],['+55','+55 Brasil']], v.ddi||'+1')}</select><input data-f="tel" inputmode="tel" autocomplete="off" value="${esc(v.tel||'')}" placeholder="DDD + número"></div></div>
+        <div class="field"><label>E-mail</label><input data-f="email" type="email" autocomplete="off" value="${esc(v.email||'')}"></div>
+      </div></div>`;
+    el.querySelectorAll('input,select').forEach(x=>x.addEventListener('input',()=>{ x.closest('.field').classList.remove('bad'); $('depErr').hidden=true; }));
+    return el;
   }
-  document.querySelectorAll('input[name=who]').forEach(r=>r.onchange=atualizaWho);
-  $('whoDeps').onchange=atualizaWho;
+  const depLe = el => { const o={}; el.querySelectorAll('[data-f]').forEach(x=>o[x.dataset.f]=x.value.trim()); return o; };
+  function renderDeps(){
+    /* recria os blocos na quantidade escolhida, mantendo o que já foi digitado */
+    const antes = [...$('depList').querySelectorAll('.dep-card')].map(depLe);
+    const n = depQtdSel();
+    $('depList').innerHTML = '';
+    for(let i=0;i<n;i++) $('depList').appendChild(depBloco(i, antes[i]));
+    $('depGo').disabled = !n;
+    $('depPrice').textContent = n ? precoTxt(basePrecoDe(1+n)) : '';
+    $('depErr').hidden = true;
+  }
+  $('depQtd').onchange = renderDeps;
+  /* validação da etapa dos dependentes: campos, documento e repetidos (titular x dependentes e entre dependentes) */
+  function validaDeps(){
+    $('depList').querySelectorAll('.field.bad').forEach(f=>f.classList.remove('bad'));
+    const cards = [...$('depList').querySelectorAll('.dep-card')];
+    if(!cards.length) return {msg:'Escolha quantos dependentes vão usar o plano.', el:$('depQtd')};
+    const campo = (c,f) => c.querySelector('[data-f="'+f+'"]');
+    const emails = [{quem:'o titular', v:$('ckEmail').value.trim().toLowerCase()}];
+    const docs = [{quem:'o titular', v:$('ckDocTipo').value+':'+$('ckDoc').value.replace(/[^0-9A-Za-z]/g,'').toUpperCase()}];
+    for(let i=0;i<cards.length;i++){
+      const c=cards[i], d=depLe(c), q='Dependente '+(i+1);
+      if(d.nome.split(/\s+/).filter(Boolean).length<2) return {msg:q+': informe o nome completo (nome e sobrenome).', el:campo(c,'nome')};
+      const idade = ageOn(d.nasc);
+      if(!d.nasc || idade===null || d.nasc > new Date().toISOString().slice(0,10) || idade>120) return {msg:q+': confira a data de nascimento.', el:campo(c,'nasc')};
+      if(!d.sexo) return {msg:q+': escolha o sexo.', el:campo(c,'sexo')};
+      if(!d.doc) return {msg:q+': informe o número do documento.', el:campo(c,'doc')};
+      if(!docOk(d.docTipo, d.doc)) return {msg:q+': o número do documento não parece válido para o tipo escolhido.', el:campo(c,'doc')};
+      const tel = d.tel.replace(/\D/g,'');
+      if(d.ddi==='+1' ? tel.length!==10 : (tel.length<10 || tel.length>11)) return {msg:q+': informe um telefone válido com DDD ('+(d.ddi==='+1'?'10 dígitos':'10 ou 11 dígitos')+').', el:campo(c,'tel')};
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)) return {msg:q+': informe um e-mail válido.', el:campo(c,'email')};
+      const em = d.email.toLowerCase(), rep = emails.find(x=>x.v===em);
+      if(rep) return {msg:q+': este e-mail já foi usado para '+rep.quem+'. Cada pessoa precisa de um e-mail próprio para acessar o Easy Doctors.', el:campo(c,'email')};
+      emails.push({quem:'o '+q.toLowerCase(), v:em});
+      const dk = d.docTipo+':'+d.doc.replace(/[^0-9A-Za-z]/g,'').toUpperCase(), repD = docs.find(x=>x.v===dk);
+      if(repD) return {msg:q+': este documento já foi usado para '+repD.quem+'. Confira o número.', el:campo(c,'doc')};
+      docs.push({quem:'o '+q.toLowerCase(), v:dk});
+    }
+    return null;
+  }
+  /* e-mails no nosso banco: só roda quando VERIFICA_EMAILS_URL existir. Resposta esperada: {success, bloqueados:[{email, mensagem}]} */
+  async function verificaEmails(lista){
+    if(!VERIFICA_EMAILS_URL) return null;
+    try{
+      const r = await fetch(VERIFICA_EMAILS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({emails:lista})});
+      const d = await r.json();
+      return (d && d.bloqueados && d.bloqueados.length) ? d.bloqueados[0] : null;
+    }catch(e){ return null; }   /* falha de rede não trava a venda; o fluxo confere de novo */
+  }
+  /* lista enviada ao v2/V3 (só os dependentes que entram no plano) */
+  function baseDepsDados(){
+    return [...$('depList').querySelectorAll('.dep-card')].slice(0, baseDeps).map(c=>{
+      const d=depLe(c), tel=d.tel.replace(/\D/g,'');
+      return {nome:d.nome, data_nascimento:d.nasc, genero:d.sexo, tipoDocumento:Number(d.docTipo), tipoDocumentoNome:DOC_NOMES[d.docTipo],
+              numeroDocumento:d.doc.replace(/[^0-9A-Za-z]/g,''), codigoPais:d.ddi, telefone:tel, telefone_e164:d.ddi+tel, email:d.email.toLowerCase()};
+    });
+  }
+  /* quem entra no plano, na página do preço */
+  function basePessoasHtml(){
+    const nomes = [$('ckName').value.trim()+' (titular)'].concat(baseDepsDados().map(d=>d.nome));
+    return `<div><span>Quem vai usar</span><b style="text-align:right">${nomes.map(esc).join('<br>')}</b></div>`;
+  }
+  /* passo 1 · botões do "Quem vai usar?" */
+  $('baseDepBtn').onclick = ()=>{ if(!passo1Ok()) return; avisaSelecao(); goStep('dep'); };
+  $('baseSoloBtn').onclick = async ()=>{
+    if(!passo1Ok()) return;
+    const b=await verificaEmails([$('ckEmail').value.trim().toLowerCase()]);
+    if(b){ $('ckErr').textContent=b.mensagem||'Este e-mail já está cadastrado no Easy Doctors.'; $('ckErr').hidden=false; $('ckEmail').focus(); return; }
+    baseDeps = 0; calculaPreco();
+  };
+  /* etapa dos dependentes · "Ver meu valor exato" */
+  $('depGo').onclick = async ()=>{
+    const v = validaDeps();
+    $('depErr').hidden = !v; $('depErr').textContent = v ? v.msg : '';
+    if(v){ if(v.el){ const f=v.el.closest('.field'); if(f) f.classList.add('bad'); v.el.focus(); } $('depErr').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+    const b = $('depGo'); b.disabled = true;
+    const lista = [$('ckEmail').value.trim()].concat([...$('depList').querySelectorAll('[data-f="email"]')].map(x=>x.value.trim())).map(e=>e.toLowerCase());
+    const bloq = await verificaEmails(lista);
+    b.disabled = false;
+    if(bloq){ $('depErr').textContent = bloq.mensagem || ('O e-mail '+bloq.email+' já está cadastrado no Easy Doctors.'); $('depErr').hidden=false; return; }
+    baseDeps = depQtdSel(); calculaPreco();
+  };
   function aplicaFormulario(){
     const key = current.opt ? current.opt.key : '';
     document.querySelectorAll('#sheet [data-show]').forEach(el=>{ el.hidden = !el.dataset.show.split(' ').includes(key); });
@@ -2667,7 +2828,12 @@ td.decide-cell{padding:12px 10px}
       ? ''
       : (nSim>1 ? 'Entram no plano as '+nSim+' pessoas que você marcou no simulador. Para mudar, volte e ajuste quem entra no plano.' : 'Entra no plano só o titular, como você marcou no simulador.');
     $('ckDepsNote').hidden = !$('ckDepsNote').textContent;
-    atualizaWho();
+    /* Base (06/11): passo 1 termina nos botões do "Quem vai usar?"; preço e pagamento na mesma página */
+    const ehBase = cfg.modo==='stripe';
+    $('st1Nav').hidden = ehBase; $('st2Nav').hidden = ehBase;
+    const rot = ehBase ? ['1 · Seus dados','2 · Dependentes','3 · Preço e pagamento'] : ['1 · Seus dados','2 · Preço exato','3 · Pagamento'];
+    [...$('progress').children].forEach((d,i)=>{ const sp=d.querySelector('span'); if(sp) sp.textContent=rot[i]; });
+    $('qPayNote').textContent = 'Você não paga nada hoje. No próximo passo você salva o cartão no ambiente seguro do Stripe e a 1ª mensalidade é cobrada em '+(DATAS[$('ckStart').value]||DATAS['2027-01-01'])+'.';
     crmReset();
   }
   /* validações do passo 1 */
@@ -2685,6 +2851,7 @@ td.decide-cell{padding:12px 10px}
     if(tel.length<10) return {msg:'Informe um telefone válido com DDD.', el:'ckPhone'};
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return {msg:'Informe um e-mail válido.', el:'ckEmail'};
     if(cfg.modo==='stripe'){
+      if(!document.querySelector('input[name=hq]:checked')) return {msg:'Responda se alguém faz tratamento contínuo, tem doença crônica ou cirurgia marcada.', el:null};
       const idade=ageOn($('dobMain').value);
       if(idade===null || idade<18) return {msg:'O titular precisa ter 18 anos ou mais. Confira a data de nascimento.', el:'dobMain'};
       if(!$('ckSexo').value) return {msg:'Escolha o sexo do titular.', el:'ckSexo'};
